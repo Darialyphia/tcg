@@ -1,13 +1,12 @@
+import type { AnyObject, Prettify, Values } from '@game/shared';
+import { InputSystem, type SerializedInput } from '../input/input-system';
+import { defaultConfig, type Config } from '../config';
+import { TypedEventEmitter } from '../utils/typed-emitter';
+import { RngSystem } from '../rng/rng.system';
+
 // augments the paylod of an event with additional data
 // for example: a unit may emit a AFTER_MOVE event without a reference to itself
 // but the global event UNIT_AFTER_MOVE will have a reference to the unit who moved
-
-import type { AnyObject, Constructor, Prettify, Values } from '@game/shared';
-import { InputSystem, type SerializedInput } from '../input/input-system';
-import type { RngSystem } from '../rng/rng-system';
-import { defaultConfig, type Config } from '../config';
-import { TypedEventEmitter } from '../utils/typed-emitter';
-
 // this type represents that in a generic way
 type EnrichEvent<TTuple extends [...any[]], TAdditional extends AnyObject> = {
   [Index in keyof TTuple]: TTuple[Index] extends AnyObject
@@ -44,7 +43,6 @@ export const GAME_EVENTS = {
 export type GameOptions = {
   id: string;
   rngSeed: string;
-  rngCtor: Constructor<RngSystem>;
   mapId: string;
   history?: SerializedInput[];
   configOverrides: Partial<Config>;
@@ -53,27 +51,18 @@ export type GameOptions = {
 export class Game {
   private readonly emitter = new TypedEventEmitter<GameEventMap>();
 
-  readonly rngSystem: RngSystem;
+  readonly rngSystem = new RngSystem(this);
 
   readonly inputSystem = new InputSystem(this);
 
   readonly config: Config;
 
   readonly id: string;
-  isSimulation = false;
+
   constructor(readonly options: GameOptions) {
     this.id = options.id;
     this.config = Object.assign({}, defaultConfig, options.configOverrides);
-    this.rngSystem = new options.rngCtor(this);
     this.setupStarEvents();
-  }
-
-  makeLogger(topic: string, color: string) {
-    return (...messages: any[]) => {
-      console.groupCollapsed(`%c[${this.id}][${topic}]`, `color: ${color}`);
-      console.log(...messages);
-      console.groupEnd();
-    };
   }
 
   // the event emitter doesnt provide the event name if you enable wildcards, so let's implement it ourselves

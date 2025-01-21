@@ -1,6 +1,6 @@
 import { createEntityId } from '../src/entity';
 import { Game, type GameOptions } from '../src/game/game';
-import { ServerRngSystem } from '../src/rng/server-rng.system';
+import { RngSystem } from '../src/rng/rng.system';
 
 export const testGameBuilder = () => {
   const options: Partial<GameOptions> = {};
@@ -40,7 +40,7 @@ export const testGameBuilder = () => {
       const game = new Game({
         id: 'test',
         mapId: options.mapId ?? '1v1',
-        rngCtor: ServerRngSystem,
+        rngCtor: RngSystem,
         rngSeed: options.rngSeed ?? 'test',
         teams: [
           [

@@ -1,11 +1,11 @@
 import { System } from '../system';
-import type { RngSystem, RngSystemOptions } from './rng-system';
 import randoomSeed from 'seedrandom';
 
-export class ServerRngSystem extends System<RngSystemOptions> implements RngSystem {
+export type RngSystemOptions = { seed: string };
+export class RngSystem extends System<RngSystemOptions> {
   private rng!: randoomSeed.PRNG;
 
-  seed!: string;
+  private seed!: string;
 
   private _values: number[] = [];
 
@@ -18,14 +18,6 @@ export class ServerRngSystem extends System<RngSystemOptions> implements RngSyst
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   shutdown() {}
 
-  get values() {
-    return [...this._values];
-  }
-
-  set values(val) {
-    this._values = val;
-  }
-
   next() {
     const val = this.rng();
     this._values.push(val);
@@ -34,9 +26,5 @@ export class ServerRngSystem extends System<RngSystemOptions> implements RngSyst
 
   nextInt(max: number) {
     return Math.floor(this.next() * (max + 1));
-  }
-
-  serialize() {
-    return { values: [...this._values] };
   }
 }

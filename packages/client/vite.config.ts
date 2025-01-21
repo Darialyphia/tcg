@@ -13,7 +13,6 @@ import icons from 'unplugin-icons/vite';
 //@ts-expect-error no types for this package
 import assetpackConfig from '@game/assetpack';
 
-
 import { AssetPack } from '@assetpack/core';
 
 function assetpackPlugin(): Plugin {
@@ -52,7 +51,7 @@ export default defineConfig({
       script: {
         defineModel: true,
         propsDestructure: true
-      },
+      }
     }),
     vueDevTools(),
     autoImport({
@@ -63,8 +62,8 @@ export default defineConfig({
       }
     }),
     unoCSS(),
-    icons({}),
-    assetpackPlugin()
+    icons({})
+    // assetpackPlugin()
   ],
   resolve: {
     alias: {

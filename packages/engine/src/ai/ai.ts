@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import type { EntityId } from '../entity';
 import type { SerializedInput } from '../input/input-system';
-import type { ServerSession } from '../server-session';
+import type { ServerSession } from '../game/game-session';
 import { AiHeuristics } from './ai-heuristics';
 import { AIPlayerAgent } from './ai-player.agent';
 import { GAME_PHASES } from '../game/game-phase.system';
