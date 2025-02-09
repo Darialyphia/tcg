@@ -8,6 +8,7 @@ export type Entries<T> = Array<
   Exclude<{ [K in keyof T]: [K, T[K]] }[keyof T], undefined>
 >;
 export type Matrix<T> = T[][];
+export type EmptyObject = Record<string, never>;
 export type AnyObject = { [key: string]: any };
 export type AnyFunction = (...args: any[]) => any;
 export type AnyAsyncFunction = (...args: any[]) => Promise<any>;

@@ -16,6 +16,7 @@ import CardDropZone from './CardDropZone.vue';
 import Graveyard from './Graveyard.vue';
 import { isDefined, type Nullable } from '@game/shared';
 import Tooltip from './Tooltip.vue';
+import { usePageLeave } from '@vueuse/core';
 
 const { player } = defineProps<{
   player: Player;
@@ -29,7 +30,6 @@ const myPlayer = game.state.players.find(p => p.isUser)!;
 
 const onDropCreature = (index: number, zone: 'attack' | 'defense') => {
   const card = game.state.selectedCard!;
-  console.log(card.isOnBoard);
   if (card.isOnBoard) {
     game.moveCreature(player, index, zone);
   } else {
@@ -46,8 +46,33 @@ const canDropCreature = (zone: BoardRow, index: number) => {
   );
 };
 
+const isOutOfScreen = usePageLeave();
+
 const isSelected = (card: Nullable<Card>) =>
   game.state.selectedCard?.id === card?.id;
+
+const onCreatureMousedown = (e: MouseEvent, card: Card) => {
+  if (e.button !== 0) return;
+
+  game.selectCard(card);
+  const stopDragging = () => {
+    game.unselectCard();
+
+    document.body.removeEventListener('mouseup', onMouseup);
+  };
+  const onMouseup = () => {
+    stopDragging();
+  };
+
+  document.body.addEventListener('mouseup', onMouseup);
+  const unwatch = watchEffect(() => {
+    if (isOutOfScreen.value) {
+      stopDragging();
+      game.state.selectedCard = null;
+      unwatch();
+    }
+  });
+};
 </script>
 
 <template>
@@ -81,14 +106,19 @@ const isSelected = (card: Nullable<Card>) =>
             />
           </Tooltip>
 
-          <CardView
+          <component
             v-if="card"
-            :card
-            class="board-card"
-            can-inspect
-            @mousedown="game.selectCard(card)"
-            @dblclick="game.sendToGraveyard($event, player, card)"
-          />
+            :is="game.state.selectedCard?.id === card.id ? Teleport : 'div'"
+            to="#dragged-card"
+          >
+            <CardView
+              :card
+              class="board-card"
+              can-inspect
+              @mousedown="onCreatureMousedown($event, card)"
+              @dblclick="game.sendToGraveyard($event, player, card)"
+            />
+          </component>
         </div>
       </div>
 
@@ -110,14 +140,20 @@ const isSelected = (card: Nullable<Card>) =>
               @drop="onDropCreature(index, 'defense')"
             />
           </Tooltip>
-          <CardView
+
+          <component
             v-if="card"
-            :card
-            class="board-card"
-            can-inspect
-            @mousedown="game.selectCard(card)"
-            @dblclick="game.sendToGraveyard($event, player, card)"
-          />
+            :is="game.state.selectedCard?.id === card.id ? Teleport : 'div'"
+            to="#dragged-card"
+          >
+            <CardView
+              :card
+              class="board-card"
+              can-inspect
+              @mousedown="onCreatureMousedown($event, card)"
+              @dblclick="game.sendToGraveyard($event, player, card)"
+            />
+          </component>
         </div>
       </div>
     </div>

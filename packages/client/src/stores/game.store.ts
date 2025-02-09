@@ -308,18 +308,19 @@ export const useGame = defineStore('game', () => {
         card => card?.id === state.value.selectedCard?.id
       )!;
       const [card] = player.board.attackZone.splice(from, 1);
-      player.board.attackZone[to] = card;
-    }
-    if (zone === 'defense') {
+      player.board.attackZone.splice(to, 0, card);
+    } else {
       const from = player.board.attackZone.findIndex(
         card => card?.id === state.value.selectedCard?.id
       )!;
       const [card] = player.board.defenseZone.splice(from, 1);
-      player.board.defenseZone[to] = card;
+      player.board.defenseZone.splice(to, 0, card);
     }
 
+    const el = document.querySelector(
+      `[data-flip-id="card_${state.value.selectedCard!.id}"]`
+    );
     state.value.selectedCard = null;
-    const el = document.querySelector('#dragged-card .card');
     if (!el) return;
 
     const flipState = Flip.getState(el);

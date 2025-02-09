@@ -1,16 +1,8 @@
 import type { AnyFunction, Constructor, Nullable, Prettify, Values } from '@game/shared';
 import { GAME_EVENTS, type Game } from '../game/game';
 import type { DefaultSchema, Input } from './input';
-import { MoveInput } from './inputs/move.input';
-import { AttackInput } from './inputs/attack.input';
-import { PlayCardInput } from './inputs/play-card.input';
 import { System } from '../system';
 import type { z } from 'zod';
-import { EndTurnInput } from './inputs/endTurn.input';
-import { GoldResourceActionInput } from './inputs/gold-resource-action.input';
-import { DrawResourceActionInput } from './inputs/draw-resource-action.input';
-import { RuneResourceActionInput } from './inputs/rune-resource-action';
-import { MulliganInput } from './inputs/mulligan.input';
 
 type GenericInputMap = Record<string, Constructor<Input<DefaultSchema>>>;
 
@@ -24,16 +16,7 @@ type ValidatedInputMap<T extends GenericInputMap> = {
 
 const validateinputMap = <T extends GenericInputMap>(data: ValidatedInputMap<T>) => data;
 
-const inputMap = validateinputMap({
-  move: MoveInput,
-  attack: AttackInput,
-  playCard: PlayCardInput,
-  endTurn: EndTurnInput,
-  mulligan: MulliganInput,
-  goldResourceAction: GoldResourceActionInput,
-  drawResourceAction: DrawResourceActionInput,
-  runeResourceAction: RuneResourceActionInput
-});
+const inputMap = validateinputMap({});
 
 type InputMap = typeof inputMap;
 
