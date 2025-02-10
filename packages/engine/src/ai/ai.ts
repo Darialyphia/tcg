@@ -1,10 +1,9 @@
 import { match } from 'ts-pattern';
-import type { EntityId } from '../entity';
 import type { SerializedInput } from '../input/input-system';
-import type { ServerSession } from '../game/game-session';
 import { AiHeuristics } from './ai-heuristics';
 import { AIPlayerAgent } from './ai-player.agent';
 import { GAME_PHASES } from '../game/game-phase.system';
+import type { GameSession } from '../game/game-session';
 
 export class AI {
   private heuristics: AiHeuristics;
@@ -12,8 +11,8 @@ export class AI {
   private optimalPath: SerializedInput[] = [];
 
   constructor(
-    private session: ServerSession,
-    private playerId: EntityId
+    private session: GameSession,
+    private playerId: string
   ) {
     this.heuristics = new AiHeuristics(this.game);
   }

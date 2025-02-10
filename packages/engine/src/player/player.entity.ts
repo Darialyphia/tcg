@@ -1,13 +1,11 @@
 import { Entity } from '../entity';
 import { type Game } from '../game/game';
 import { type EmptyObject, type Point, type Serializable } from '@game/shared';
-import { PLAYER_EVENTS } from './player-enums';
+import type { PlayerEventMap } from './player.events';
 
 type CardOptions = {
   blueprintId: string;
 };
-
-type Card = any;
 
 export type PlayerOptions = {
   id: string;
@@ -19,18 +17,6 @@ export type PlayerOptions = {
 export type SerializedPlayer = {
   id: string;
   name: string;
-};
-
-export type PlayerEventMap = {
-  [PLAYER_EVENTS.START_TURN]: [{ id: string }];
-  [PLAYER_EVENTS.END_TURN]: [{ id: string }];
-  [PLAYER_EVENTS.BEFORE_DRAW]: [{ amount: number }];
-  [PLAYER_EVENTS.AFTER_DRAW]: [{ cards: Card[] }];
-  [PLAYER_EVENTS.BEFORE_PLAY_CARD]: [{ card: Card; targets: Point[] }];
-  [PLAYER_EVENTS.AFTER_PLAY_CARD]: [{ card: Card; targets: Point[] }];
-  [PLAYER_EVENTS.BEFORE_MANA_CHANGE]: [{ amount: number }];
-  [PLAYER_EVENTS.AFTER_MANA_CHANGE]: [{ amount: number }];
-  [PLAYER_EVENTS.MULLIGAN]: [{ id: string }];
 };
 
 export class Player
@@ -53,4 +39,10 @@ export class Player
       name: this.options.name
     };
   }
+
+  get opponent() {
+    return this.game.playerSystem.players.find(p => !p.equals(this))!;
+  }
+
+  startTurn() {}
 }

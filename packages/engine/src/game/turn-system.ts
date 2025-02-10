@@ -1,8 +1,8 @@
 import type { Values } from '@game/shared';
-import { TypedEventEmitter } from '../utils/typed-emitter';
+import { TypedEvent, TypedEventEmitter } from '../utils/typed-emitter';
 import { System } from '../system';
-import { GAME_EVENTS } from './game';
 import type { Player } from '../player/player.entity';
+import { GAME_EVENTS } from './game.events';
 
 export const TURN_EVENTS = {
   TURN_START: 'turn_start',
@@ -11,9 +11,39 @@ export const TURN_EVENTS = {
 
 export type TurnEvent = Values<typeof TURN_EVENTS>;
 
+export class TurnStartEvent extends TypedEvent<
+  { turnCount: number },
+  { turnCount: number }
+> {
+  get turnCount() {
+    return this.data.turnCount;
+  }
+
+  serialize() {
+    return {
+      turnCount: this.data.turnCount
+    };
+  }
+}
+
+export class TurnEndEvent extends TypedEvent<
+  { turnCount: number },
+  { turnCount: number }
+> {
+  get turnCount() {
+    return this.data.turnCount;
+  }
+
+  serialize() {
+    return {
+      turnCount: this.data.turnCount
+    };
+  }
+}
+
 export type TurnEventMap = {
-  [TURN_EVENTS.TURN_START]: [{ turnCount: number }];
-  [TURN_EVENTS.TURN_END]: [{ turnCount: number }];
+  [TURN_EVENTS.TURN_START]: TurnStartEvent;
+  [TURN_EVENTS.TURN_END]: TurnEndEvent;
 };
 
 export class TurnSystem extends System<never> {
@@ -66,16 +96,22 @@ export class TurnSystem extends System<never> {
 
   startGameTurn() {
     this._turnCount++;
-    this.emitter.emit(TURN_EVENTS.TURN_START, { turnCount: this.turnCount });
+    this.emitter.emit(
+      TURN_EVENTS.TURN_START,
+      new TurnStartEvent({ turnCount: this.turnCount })
+    );
     this._activePlayer.startTurn();
   }
 
   endGameTurn() {
-    this.emitter.emit(TURN_EVENTS.TURN_END, { turnCount: this.turnCount });
+    this.emitter.emit(
+      TURN_EVENTS.TURN_END,
+      new TurnEndEvent({ turnCount: this.turnCount })
+    );
   }
 
   onPlayerTurnEnd() {
-    const nextPlayer = this._activePlayer.opponents[0];
+    const nextPlayer = this._activePlayer.opponent;
     if (nextPlayer.equals(this.firstPlayer)) {
       this.endGameTurn();
       this._activePlayer = nextPlayer;

@@ -1,70 +1,12 @@
-import type { AnyObject, Prettify, Values } from '@game/shared';
 import { InputSystem, type SerializedInput } from '../input/input-system';
 import { defaultConfig, type Config } from '../config';
 import { TypedEventEmitter } from '../utils/typed-emitter';
 import { RngSystem } from '../rng/rng.system';
 import { GamePhaseSystem } from './game-phase.system';
 import { GameSnaphotSystem } from './game-snapshot.system';
-import { PLAYER_EVENTS, type PlayerEvent } from '../player/player-enums';
-import type { Player, PlayerEventMap } from '../player/player.entity';
-import { mapKeys, mapValues } from 'lodash-es';
 import { PlayerSystem } from '../player/player.system';
-
-// augments the paylod of an event with additional data
-// for example: a unit may emit a AFTER_MOVE event without a reference to itself
-// but the global event UNIT_AFTER_MOVE will have a reference to the unit who moved
-// this type represents that in a generic way
-type EnrichEvent<TTuple extends [...any[]], TAdditional extends AnyObject> = {
-  [Index in keyof TTuple]: TTuple[Index] extends AnyObject
-    ? TTuple[Index] & TAdditional
-    : TTuple;
-} & { length: TTuple['length'] };
-
-type GlobalPlayerEvents = {
-  [Event in PlayerEvent as `player.${Event}`]: EnrichEvent<
-    PlayerEventMap[Event],
-    { player: Player }
-  >;
-};
-
-type GameEventsBase = {
-  'game.input-start': [SerializedInput];
-  'game.input-queue-flushed': [];
-  'game.error': [{ error: Error }];
-  'game.ready': [];
-  '*': [e: StarEvent];
-};
-
-export type GameEventMap = Prettify<GameEventsBase & GlobalPlayerEvents>;
-export type GameEventName = keyof GameEventMap;
-export type GameEvent = Values<GameEventMap>;
-
-export type StarEvent<
-  T extends Exclude<GameEventName, '*'> = Exclude<GameEventName, '*'>
-> = {
-  eventName: T;
-  event: GameEventMap[T];
-};
-
-const makeGlobalEvents = <TDict extends Record<string, string>, TPrefix extends string>(
-  eventDict: TDict,
-  prefix: TPrefix
-) =>
-  mapKeys(
-    mapValues(eventDict, evt => `${prefix}.${evt}`),
-    (value, key) => `${prefix.toUpperCase()}_${key}`
-  ) as {
-    [Key in string &
-      keyof TDict as `${Uppercase<TPrefix>}_${Key}`]: `${TPrefix}.${TDict[Key]}`;
-  };
-
-export const GAME_EVENTS = {
-  ERROR: 'game.error',
-  READY: 'game.ready',
-  FLUSHED: 'game.input-queue-flushed',
-  INPUT_START: 'game.input-start',
-  ...makeGlobalEvents(PLAYER_EVENTS, 'player')
-} as const satisfies Record<string, keyof GameEventMap>;
+import { GAME_EVENTS, GameReadyEvent, type GameEventMap } from './game.events';
+import { TurnSystem } from './turn-system';
 
 export type GameOptions = {
   id: string;
@@ -89,7 +31,11 @@ export class Game {
 
   readonly gamePhaseSystem = new GamePhaseSystem(this);
 
+  readonly turnSystem = new TurnSystem(this);
+
   readonly serializer = new GameSnaphotSystem(this);
+
+  isSimulation = false;
 
   constructor(readonly options: GameOptions) {
     this.id = options.id;
@@ -114,8 +60,9 @@ export class Game {
     this.gamePhaseSystem.initialize();
     this.playerSystem.initialize({} as any);
     this.serializer.initialize();
+    this.turnSystem.initialize();
 
-    this.emit(GAME_EVENTS.READY);
+    this.emit(GAME_EVENTS.READY, new GameReadyEvent({}));
   }
 
   get on() {

@@ -1,6 +1,5 @@
-import { createEntityId } from '../src/entity';
 import { Game, type GameOptions } from '../src/game/game';
-import { RngSystem } from '../src/rng/rng.system';
+import type { PlayerOptions } from '../src/player/player.entity';
 
 export const testGameBuilder = () => {
   const options: Partial<GameOptions> = {};
@@ -14,66 +13,42 @@ export const testGameBuilder = () => {
       options.rngSeed = seed;
       return this;
     },
-    withP1Deck(deck: GameOptions['teams'][number][number]['deck']) {
-      options.teams ??= [[], []];
-      options.teams[0] = [
-        {
-          deck,
-          id: '',
-          name: ''
-        }
-      ];
+    withP1Deck(deck: PlayerOptions['deck']) {
+      // @ts-expect-error
+      options.players ??= [];
+      // @ts-expect-error
+      options.players[0] = {
+        deck,
+        id: '',
+        name: ''
+      };
       return this;
     },
-    withP2Deck(deck: GameOptions['teams'][number][number]['deck']) {
-      options.teams ??= [[], []];
-      options.teams[1] = [
-        {
-          deck,
-          id: '',
-          name: ''
-        }
-      ];
+    withP2Deck(deck: PlayerOptions['deck']) {
+      // @ts-expect-error
+      options.players ??= [];
+      // @ts-expect-error
+      options.players[1] = {
+        deck,
+        id: '',
+        name: ''
+      };
       return this;
     },
     build() {
       const game = new Game({
         id: 'test',
+        configOverrides: {},
         mapId: options.mapId ?? '1v1',
-        rngCtor: RngSystem,
-        rngSeed: options.rngSeed ?? 'test',
-        teams: [
-          [
-            {
-              id: 'p1',
-              name: 'Player 1',
-              deck: options.teams?.[0][0]?.deck ?? {
-                general: { blueprintId: 'red-general-flame-lord' },
-                cards: []
-              }
-            }
-          ],
-          [
-            {
-              id: 'p2',
-              name: 'Player 2',
-              deck: options.teams?.[1][0]?.deck ?? {
-                general: { blueprintId: 'red-general-flame-lord' },
-                cards: []
-              }
-            }
-          ]
-        ]
+        rngSeed: options.rngSeed ?? 'test'
       });
 
       game.initialize();
 
       return {
-        game,
-        team1: game.playerSystem.teams[0],
-        team2: game.playerSystem.teams[1],
-        player1: game.playerSystem.getPlayerById(createEntityId('p1'))!,
-        player2: game.playerSystem.getPlayerById(createEntityId('p2'))!
+        game
+        // player1: game.playerSystem.player1,
+        // player2: game.playerSystem.player2
       };
     }
   };

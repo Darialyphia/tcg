@@ -1,17 +1,17 @@
 import { type AnyObject, type EmptyObject } from '@game/shared';
 import { System } from '../system';
-import { type StarEvent } from './game';
+import { type GameStarEvent, type SerializedStarEvent } from './game.events';
 
 export type GameStateSnapshot = {
   id: number;
   state: AnyObject;
-  events: any[];
+  events: SerializedStarEvent[];
 };
 
 export class GameSnaphotSystem extends System<EmptyObject> {
   private cache: GameStateSnapshot[] = [];
 
-  private eventsSinceLastSnapshot: StarEvent[] = [];
+  private eventsSinceLastSnapshot: GameStarEvent[] = [];
 
   private nextId = -1;
 
@@ -42,7 +42,7 @@ export class GameSnaphotSystem extends System<EmptyObject> {
     const snapshot: GameStateSnapshot = {
       id: this.nextId++,
       state: {},
-      events: [...this.eventsSinceLastSnapshot]
+      events: this.eventsSinceLastSnapshot.map(event => event.serialize())
     };
 
     this.cache.push(snapshot);

@@ -1,4 +1,5 @@
-import { GAME_EVENTS, type Game, type StarEvent } from '../../game/game';
+import type { Game } from '../../game/game';
+import { GAME_EVENTS, type StarEvent } from '../../game/game.events';
 import type { Player } from '../player.entity';
 
 export class EventTrackerComponent {
@@ -17,20 +18,5 @@ export class EventTrackerComponent {
         currentTurnEvents.push(e);
       }
     });
-  }
-
-  get allyDiedLastTurn() {
-    return this.lastTurnEvents.some(e => {
-      if (e.eventName !== GAME_EVENTS.UNIT_AFTER_DESTROY) return false;
-      return (e.event as any).unit.player.isAlly(this.player);
-    });
-  }
-
-  get enemyDiedLastTurn() {
-    return this.lastTurnEvents.some(
-      e =>
-        e.eventName === GAME_EVENTS.UNIT_AFTER_DESTROY &&
-        (e.event as any).unit.player.eisEnemy(this.player)
-    );
   }
 }

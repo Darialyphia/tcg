@@ -1,15 +1,15 @@
-import { assert, type AnyObject, type JSONValue, type Serializable } from '@game/shared';
+import { assert, type AnyObject, type JSONObject, type Serializable } from '@game/shared';
 import EventEmitter2 from 'eventemitter2';
 
-export abstract class TypedEvent<TPayload, TSerialized extends JSONValue>
+export abstract class TypedEvent<TData, TSerialized extends JSONObject>
   implements Serializable<TSerialized>
 {
-  constructor(public payload: TPayload) {}
+  constructor(public data: TData) {}
 
   abstract serialize(): TSerialized;
 }
 
-type GenericEventMap = Record<string, [TypedEvent<AnyObject, JSONValue>]>;
+type GenericEventMap = Record<string, TypedEvent<AnyObject, JSONObject>>;
 
 export class TypedEventEmitter<TEvents extends GenericEventMap> {
   private emitter = new EventEmitter2();
@@ -28,7 +28,7 @@ export class TypedEventEmitter<TEvents extends GenericEventMap> {
     eventName: TEventName,
     eventArg: TEvents[TEventName]
   ) {
-    return this.emitter.emit(eventName, ...eventArg);
+    return this.emitter.emit(eventName, eventArg);
   }
 
   emitAsync<TEventName extends keyof TEvents & string>(
@@ -39,30 +39,30 @@ export class TypedEventEmitter<TEvents extends GenericEventMap> {
       this.isAsync,
       'Not allowed to emit async events on this emitter. instanciate the emitter with new TypedEventEmitter(true) to enable async emits'
     );
-    return this.emitter.emitAsync(eventName, ...eventArg);
+    return this.emitter.emitAsync(eventName, eventArg);
   }
 
   on<TEventName extends keyof TEvents & string>(
     eventName: TEventName,
-    handler: (...eventArg: TEvents[TEventName]) => void
+    handler: (eventArg: TEvents[TEventName]) => void
   ) {
     this.emitter.on(eventName, handler as any);
 
-    return () => this.off(eventName, handler);
+    return () => this.off(eventName, handler as any);
   }
 
   once<TEventName extends keyof TEvents & string>(
     eventName: TEventName,
-    handler: (...eventArg: TEvents[TEventName]) => void
+    handler: (eventArg: TEvents[TEventName]) => void
   ) {
     this.emitter.once(eventName, handler as any);
 
-    return () => this.off(eventName, handler);
+    return () => this.off(eventName, handler as any);
   }
 
   off<TEventName extends keyof TEvents & string>(
     eventName: TEventName,
-    handler: (...eventArg: TEvents[TEventName]) => void
+    handler: (eventArg: TEvents[TEventName]) => void
   ) {
     this.emitter.off(eventName, handler as any);
   }

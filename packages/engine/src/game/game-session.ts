@@ -1,7 +1,8 @@
 import { type BetterOmit, type PartialBy } from '@game/shared';
-import { Game, GAME_EVENTS, type GameOptions } from './game';
+import { Game, type GameOptions } from './game';
 import type { SerializedInput } from '../input/input-system';
 import type { GameStateSnapshot } from './game-snapshot.system';
+import { GAME_EVENTS } from './game.events';
 
 export type GameSessionOptions = BetterOmit<
   PartialBy<GameOptions, 'configOverrides'>,

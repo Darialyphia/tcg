@@ -1,8 +1,14 @@
 import type { AnyFunction, Constructor, Nullable, Prettify, Values } from '@game/shared';
-import { GAME_EVENTS, type Game } from '../game/game';
+import { type Game } from '../game/game';
 import type { DefaultSchema, Input } from './input';
 import { System } from '../system';
 import type { z } from 'zod';
+import {
+  GAME_EVENTS,
+  GameErrorEvent,
+  GameInputQueueFlushedEvent,
+  GameInputStartEvent
+} from '../game/game.events';
 
 type GenericInputMap = Record<string, Constructor<Input<DefaultSchema>>>;
 
@@ -79,9 +85,9 @@ export class InputSystem extends System<SerializedInput[]> {
         fn!();
       }
       this.isRunning = false;
-      this.game.emit('game.input-queue-flushed');
+      this.game.emit('game.input-queue-flushed', new GameInputQueueFlushedEvent({}));
     } catch (err) {
-      this.game.emit('game.error', { error: err as Error });
+      this.game.emit('game.error', new GameErrorEvent({ error: err as Error }));
     }
   }
 
@@ -91,15 +97,18 @@ export class InputSystem extends System<SerializedInput[]> {
     return this.schedule(() => this.handleInput(input));
   }
 
-  handleInput({ type, payload }: SerializedInput) {
-    if (!this.isActionType(type)) return;
-    const ctor = inputMap[type];
-    const input = new ctor(this.game, payload);
-    this._currentAction = input;
-    this.game.emit(GAME_EVENTS.INPUT_START, { type, payload } as SerializedInput);
+  handleInput(input: SerializedInput) {
+    if (!this.isActionType(input.type)) return;
+    const ctor = inputMap[input.type];
+    const inputInst = new ctor(this.game, input.payload);
+    this._currentAction = inputInst;
+    this.game.emit(
+      GAME_EVENTS.INPUT_START,
+      new GameInputStartEvent({ input: inputInst })
+    );
 
-    input.execute();
-    this.history.push(input);
+    inputInst.execute();
+    this.history.push(inputInst);
     this._currentAction = null;
   }
 
