@@ -52,12 +52,10 @@ export const CREATURE_JOB = {
 export type CreatureJob = Values<typeof CREATURE_JOB>;
 
 export const CARD_SETS = {
-  TUTORIAL: 'TUTORIAL',
-  BASIC: 'BASIC',
   CORE: 'CORE'
 } as const;
 
-export type CardSet = Values<typeof CARD_SETS>;
+export type CardSetId = Values<typeof CARD_SETS>;
 
 export const FACTION_IDS = {
   F1: 'F1',

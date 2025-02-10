@@ -1,13 +1,17 @@
-import { Card, type AnyCard, type CardOptions } from './card.entity';
+import { Card, type AnyCard, type CardOptions, type SerializedCard } from './card.entity';
 import type { CreatureBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
 import type { CreatureEventMap } from '../card.events';
-import type { Attacker, Damage, Defender } from '../../utils/damage';
+import type { Attacker, Damage, Defender } from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
+import { HealthComponent } from '../../combat/health.component';
 
-export type SerializedCreature = {
-  id: string;
+export type SerializedCreature = SerializedCard & {
+  atk: number;
+  maxHp: number;
+  job: string;
+  manaCost: number;
 };
 
 const makeInterceptors = () => ({
@@ -33,8 +37,13 @@ export class Creature extends Card<
   CreatureInterceptors,
   CreatureBlueprint
 > {
+  readonly health: HealthComponent;
+
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, makeInterceptors(), options);
+    this.health = new HealthComponent({
+      initialValue: this.maxHp
+    });
   }
 
   get atk(): number {
@@ -43,6 +52,14 @@ export class Creature extends Card<
 
   get maxHp(): number {
     return this.interceptors.maxHp.getValue(this.blueprint.maxHp, {});
+  }
+
+  get hp() {
+    return this.health.current;
+  }
+
+  get isDead() {
+    return this.health.isDead;
   }
 
   get manaCost() {
@@ -69,9 +86,20 @@ export class Creature extends Card<
 
   play() {}
 
-  serialize() {
+  serialize(): SerializedCreature {
     return {
-      id: this.id
+      id: this.id,
+      name: this.name,
+      imageId: this.imageId,
+      description: this.description,
+      kind: this.kind,
+      manaCost: this.manaCost,
+      atk: this.atk,
+      maxHp: this.maxHp,
+      job: this.job,
+      rarity: this.rarity,
+      faction: this.faction?.serialize() ?? null,
+      set: this.set.serialize()
     };
   }
 }

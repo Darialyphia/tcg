@@ -43,8 +43,8 @@ export abstract class Damage<T extends AnyCard = AnyCard> {
   abstract getFinalAmount(target: Defender): number;
 }
 
-export class CombatDamage extends Damage<Creature> {
-  constructor(options: BetterOmit<DamageOptions<Creature>, 'type'>) {
+export class CombatDamage extends Damage<Attacker> {
+  constructor(options: BetterOmit<DamageOptions<Attacker>, 'type'>) {
     super({ ...options, type: DAMAGE_TYPES.COMBAT });
   }
 

@@ -3,7 +3,7 @@ import type { Keyword } from './card-keyword';
 import type {
   CARD_KINDS,
   CardKind,
-  CardSet,
+  CardSetId,
   CreatureJob,
   Rarity,
   SpellKind
@@ -17,7 +17,7 @@ import type { Spell } from './entities/spell.entity';
 export type CardBlueprintBase = {
   id: string;
   name: string;
-  set: CardSet;
+  setId: CardSetId;
   imageId: string;
   description: string;
   faction: Faction | null;

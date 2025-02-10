@@ -1,12 +1,14 @@
-import { Card, type CardOptions } from './card.entity';
+import { Card, type CardOptions, type SerializedCard } from './card.entity';
 import type { SpellBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
 import type { SpellEventMap } from '../card.events';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
+import type { SpellKind } from '../card.enums';
 
-export type SerializedSpell = {
-  id: string;
+export type SerializedSpell = SerializedCard & {
+  spellKind: SpellKind;
+  manacost: number;
 };
 
 const makeInterceptors = () => ({
@@ -37,7 +39,16 @@ export class Spell extends Card<
 
   serialize() {
     return {
-      id: this.id
+      id: this.id,
+      name: this.name,
+      imageId: this.imageId,
+      description: this.description,
+      set: this.set,
+      faction: this.faction?.serialize() ?? null,
+      kind: this.kind,
+      rarity: this.rarity,
+      spellKind: this.spellKind,
+      manacost: this.manaCost
     };
   }
 }

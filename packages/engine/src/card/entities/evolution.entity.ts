@@ -1,15 +1,18 @@
-import { Card, type AnyCard, type CardOptions } from './card.entity';
+import { Card, type AnyCard, type CardOptions, type SerializedCard } from './card.entity';
 import type { CreatureBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
 import type { CreatureEventMap } from '../card.events';
-import type { Defender, Attacker, Damage } from '../../utils/damage';
+import type { Defender, Attacker, Damage } from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
+import { HealthComponent } from '../../combat/health.component';
 
-export type SerializedEvolution = {
-  id: string;
+export type SerializedEvolution = SerializedCard & {
+  atk: number;
+  maxHp: number;
+  job: string;
+  manaCost: number;
 };
-
 const makeInterceptors = () => ({
   canAttack: new Interceptable<boolean, { target: Defender }>(),
   canBlock: new Interceptable<boolean, { attacker: Attacker }>(),
@@ -33,8 +36,12 @@ export class Evolution extends Card<
   EvolutionInterceptors,
   CreatureBlueprint
 > {
+  readonly health: HealthComponent;
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, makeInterceptors(), options);
+    this.health = new HealthComponent({
+      initialValue: this.maxHp
+    });
   }
 
   get atk(): number {
@@ -69,9 +76,20 @@ export class Evolution extends Card<
 
   play() {}
 
-  serialize() {
+  serialize(): SerializedEvolution {
     return {
-      id: this.id
+      id: this.id,
+      name: this.name,
+      imageId: this.imageId,
+      description: this.description,
+      kind: this.kind,
+      manaCost: this.manaCost,
+      atk: this.atk,
+      maxHp: this.maxHp,
+      job: this.job,
+      rarity: this.rarity,
+      faction: this.faction?.serialize() ?? null,
+      set: this.set.serialize()
     };
   }
 }

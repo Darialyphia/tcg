@@ -1,10 +1,13 @@
-import { type JSONObject, type Point3D } from '@game/shared';
+import { type JSONObject } from '@game/shared';
 import { Entity } from '../../entity';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import type { CardBlueprint } from '../card-blueprint';
-import type { CARD_EVENTS } from '../card.enums';
+import type { CARD_EVENTS, CardKind, Rarity } from '../card.enums';
 import type { CardAfterPlayEvent, CardBeforePlayEvent } from '../card.events';
+import type { SerializedFaction } from './faction.entity';
+import type { SerializedCardSet } from './card-set.entity';
+import { CARD_SET_DICTIONARY } from '../sets';
 
 export type CardOptions = {
   id: string;
@@ -17,6 +20,17 @@ export type CardEventMap = {
 };
 
 export type AnyCard = Card<any, any, any, any>;
+
+export type SerializedCard = {
+  id: string;
+  imageId: string;
+  description: string;
+  name: string;
+  kind: CardKind;
+  set: SerializedCardSet;
+  rarity: Rarity;
+  faction: SerializedFaction | null;
+};
 
 export abstract class Card<
   TSerialized extends JSONObject,
@@ -69,6 +83,10 @@ export abstract class Card<
 
   get faction() {
     return this.blueprint.faction;
+  }
+
+  get set() {
+    return CARD_SET_DICTIONARY[this.blueprint.setId];
   }
 
   abstract play(): void;
