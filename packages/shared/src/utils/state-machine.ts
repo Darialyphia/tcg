@@ -9,7 +9,7 @@ export interface ITransition<STATE, EVENT, CALLBACK> {
   cb?: CALLBACK;
 }
 
-export function t<STATE, EVENT, CALLBACK>(
+export function transition<STATE, EVENT, CALLBACK>(
   fromState: STATE,
   event: EVENT,
   toState: STATE,

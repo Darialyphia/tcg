@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { assert, type JSONValue, type Serializable } from '@game/shared';
 import type { Game } from '../game/game';
-import { createEntityId } from '../entity';
 import type { GamePhase } from '../game/game-phase.system';
 
 export const defaultInputSchema = z.object({
@@ -37,7 +36,7 @@ export abstract class Input<TSchema extends DefaultSchema>
   }
 
   get player() {
-    return this.game.playerSystem.getPlayerById(createEntityId(this.payload.playerId))!;
+    return this.game.playerSystem.getPlayerById(this.payload.playerId)!;
   }
 
   get isValidPhase() {
@@ -54,12 +53,7 @@ export abstract class Input<TSchema extends DefaultSchema>
       `Cannot execute input ${this.name} during game phase ${this.game.phase}`
     );
 
-    try {
-      this.impl();
-    } catch (err) {
-      this.game.makeLogger('ERROR', 'red')(this.payload, err);
-      throw err;
-    }
+    this.impl();
   }
 
   serialize() {

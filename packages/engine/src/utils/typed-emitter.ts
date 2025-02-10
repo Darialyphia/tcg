@@ -1,7 +1,17 @@
-import { assert } from '@game/shared';
+import { assert, type AnyObject, type JSONValue, type Serializable } from '@game/shared';
 import EventEmitter2 from 'eventemitter2';
 
-export class TypedEventEmitter<TEvents extends Record<string, any>> {
+export abstract class TypedEvent<TPayload, TSerialized extends JSONValue>
+  implements Serializable<TSerialized>
+{
+  constructor(public payload: TPayload) {}
+
+  abstract serialize(): TSerialized;
+}
+
+type GenericEventMap = Record<string, [TypedEvent<AnyObject, JSONValue>]>;
+
+export class TypedEventEmitter<TEvents extends GenericEventMap> {
   private emitter = new EventEmitter2();
   private isAsync: boolean;
 
@@ -16,20 +26,20 @@ export class TypedEventEmitter<TEvents extends Record<string, any>> {
 
   emit<TEventName extends keyof TEvents & string>(
     eventName: TEventName,
-    ...eventArg: TEvents[TEventName]
+    eventArg: TEvents[TEventName]
   ) {
-    return this.emitter.emit(eventName, ...(eventArg as []));
+    return this.emitter.emit(eventName, ...eventArg);
   }
 
   emitAsync<TEventName extends keyof TEvents & string>(
     eventName: TEventName,
-    ...eventArg: TEvents[TEventName]
+    eventArg: TEvents[TEventName]
   ) {
     assert(
       this.isAsync,
       'Not allowed to emit async events on this emitter. instanciate the emitter with new TypedEventEmitter(true) to enable async emits'
     );
-    return this.emitter.emitAsync(eventName, ...(eventArg as []));
+    return this.emitter.emitAsync(eventName, ...eventArg);
   }
 
   on<TEventName extends keyof TEvents & string>(
