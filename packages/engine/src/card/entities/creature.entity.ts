@@ -8,6 +8,9 @@ import type { Player } from '../../player/player.entity';
 import { HealthComponent } from '../../combat/health.component';
 import { CREATURE_EVENTS } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
+import type { CreatureSlot } from '../../game/game-board.system';
+import type { Evolution } from './evolution.entity';
+import { isDefined } from '@game/shared';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -71,6 +74,19 @@ export class Creature extends Card<
 
   get job() {
     return this.blueprint.job;
+  }
+
+  get position() {
+    return this.player.boardSide.getPositionFor(this);
+  }
+
+  get adjacentCreatures() {
+    if (!this.position) {
+      return [];
+    }
+
+    const { slot, zone } = this.position;
+    return this.player.boardSide.getAdjacentCreatures(zone, slot);
   }
 
   getDealtDamage(target: Defender) {

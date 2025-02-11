@@ -7,6 +7,7 @@ import { GameSnaphotSystem } from './game-snapshot.system';
 import { PlayerSystem } from '../player/player.system';
 import { GAME_EVENTS, GameReadyEvent, type GameEventMap } from './game.events';
 import { TurnSystem } from './turn-system';
+import { GameBoardSystem } from './game-board.system';
 
 export type GameOptions = {
   id: string;
@@ -30,6 +31,8 @@ export class Game {
   readonly playerSystem = new PlayerSystem(this);
 
   readonly gamePhaseSystem = new GamePhaseSystem(this);
+
+  readonly board = new GameBoardSystem(this);
 
   readonly turnSystem = new TurnSystem(this);
 
@@ -59,6 +62,7 @@ export class Game {
     this.inputSystem.initialize(this.options.history ?? []);
     this.gamePhaseSystem.initialize();
     this.playerSystem.initialize({} as any);
+    this.board.initialize();
     this.serializer.initialize();
     this.turnSystem.initialize();
 

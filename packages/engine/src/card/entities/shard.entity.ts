@@ -22,7 +22,10 @@ export class Shard extends Card<
     this.forwardListeners();
   }
 
-  play() {}
+  play() {
+    this.player.boardSide.placeShard(this);
+    this.blueprint.onPlay(this.game, this);
+  }
 
   forwardListeners() {
     Object.values(SHARD_EVENTS).forEach(eventName => {

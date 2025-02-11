@@ -64,6 +64,19 @@ export class Evolution extends Card<
     return this.blueprint.job;
   }
 
+  get position() {
+    return this.player.boardSide.getPositionFor(this);
+  }
+
+  get adjacentCreatures() {
+    if (!this.position) {
+      return [];
+    }
+
+    const { slot, zone } = this.position;
+    return this.player.boardSide.getAdjacentCreatures(zone, slot);
+  }
+
   getDealtDamage(target: Defender) {
     return this.interceptors.damageDealt.getValue(this.atk, {
       target

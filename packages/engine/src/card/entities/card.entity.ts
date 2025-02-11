@@ -9,9 +9,9 @@ import type { SerializedFaction } from './faction.entity';
 import type { SerializedCardSet } from './card-set.entity';
 import { CARD_SET_DICTIONARY } from '../sets';
 
-export type CardOptions = {
+export type CardOptions<T extends CardBlueprint = CardBlueprint> = {
   id: string;
-  blueprint: CardBlueprint;
+  blueprint: T;
 };
 
 export type CardEventMap = {

@@ -24,6 +24,6 @@ export class PlayerSystem extends System<PlayerSystemOptions> {
   }
 
   get players() {
-    return [...this.playerMap.values()];
+    return [...this.playerMap.values()] as [Player, Player];
   }
 }
