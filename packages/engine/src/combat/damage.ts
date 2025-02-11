@@ -1,5 +1,5 @@
 import type { BetterOmit, Values } from '@game/shared';
-import type { AnyCard, Card } from '../card/entities/card.entity';
+import type { AnyCard } from '../card/entities/card.entity';
 import type { Creature } from '../card/entities/creature.entity';
 import type { Hero } from '../card/entities/hero.entity';
 import type { Evolution } from '../card/entities/evolution.entity';

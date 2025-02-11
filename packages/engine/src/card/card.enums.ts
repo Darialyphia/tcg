@@ -7,7 +7,8 @@ export const CARD_EVENTS = {
 } as const;
 export type CardEvent = Values<typeof CARD_EVENTS>;
 
-export const CREATURE_CARD_EVENTS = {
+export const CREATURE_EVENTS = {
+  ...CARD_EVENTS,
   BEFORE_ATTACK: 'before_attack',
   AFTER_ATTACK: 'after_attack',
   BEFORE_BLOCK: 'before_block',
@@ -17,11 +18,23 @@ export const CREATURE_CARD_EVENTS = {
   BEFORE_DEAL_DAMAGE: 'before_deal_damage',
   AFTER_DEAL_DAMAGE: 'after_deal_damage',
   BEFORE_TAKE_DAMAGE: 'before_take_damage',
-  AFTER_TAKE_DAMAGE: 'after_take_damage',
-  BEFORE_USE_ABILITY: 'before_use_ability',
-  AFTER_USE_ABILITY: 'after_use_ability'
+  AFTER_TAKE_DAMAGE: 'after_take_damage'
+  // BEFORE_USE_ABILITY: 'before_use_ability',
+  // AFTER_USE_ABILITY: 'after_use_ability'
 } as const;
-export type CreatureCardEvent = Values<typeof CREATURE_CARD_EVENTS>;
+export type CreatureCardEvent = Values<typeof CREATURE_EVENTS>;
+
+export const EVOLUTION_EVENTS = { ...CARD_EVENTS } as const;
+export type EvolutionCardEvent = Values<typeof EVOLUTION_EVENTS>;
+
+export const SPELL_EVENTS = { ...CARD_EVENTS } as const;
+export type SpellCardEvent = Values<typeof SPELL_EVENTS>;
+
+export const HERO_EVENTS = { ...CARD_EVENTS } as const;
+export type HeroCardEvent = Values<typeof HERO_EVENTS>;
+
+export const SHARD_EVENTS = { ...CARD_EVENTS } as const;
+export type ShardCardEvent = Values<typeof SHARD_EVENTS>;
 
 export const CARD_KINDS = {
   CREATURE: 'CREATURE',

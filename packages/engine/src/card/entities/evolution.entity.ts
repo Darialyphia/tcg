@@ -6,6 +6,8 @@ import type { Defender, Attacker, Damage } from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import { HealthComponent } from '../../combat/health.component';
+import { EVOLUTION_EVENTS } from '../card.enums';
+import { GameCardEvent } from '../../game/game.events';
 
 export type SerializedEvolution = SerializedCard & {
   atk: number;
@@ -37,11 +39,13 @@ export class Evolution extends Card<
   CreatureBlueprint
 > {
   readonly health: HealthComponent;
+
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, makeInterceptors(), options);
     this.health = new HealthComponent({
       initialValue: this.maxHp
     });
+    this.forwardListeners();
   }
 
   get atk(): number {
@@ -75,6 +79,17 @@ export class Evolution extends Card<
   }
 
   play() {}
+
+  forwardListeners() {
+    Object.values(EVOLUTION_EVENTS).forEach(eventName => {
+      this.on(eventName, event => {
+        this.game.emit(
+          `card.${eventName}`,
+          new GameCardEvent({ card: this, event: event as any }) as any
+        );
+      });
+    });
+  }
 
   serialize(): SerializedEvolution {
     return {

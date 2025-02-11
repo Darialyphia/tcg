@@ -1,5 +1,3 @@
-import type { AnyCard } from '../card/entities/card.entity';
-
 export type HealthComponentOptions = {
   initialValue: number;
 };

@@ -1,9 +1,10 @@
+import type { AnyObject } from '@game/shared';
 import type { inferInterceptor, Interceptable } from './utils/interceptable';
 import { TypedEventEmitter } from './utils/typed-emitter';
 
 export type EmptyEventMap = Record<string, never>;
 export type EmptyInterceptables = Record<string, never>;
-export type AnyEntity = Entity<Record<string, any>, Record<string, any>>;
+export type AnyEntity = Entity<AnyObject, AnyObject>;
 
 export abstract class Entity<
   TE extends Record<string, any>,

@@ -7,22 +7,73 @@ import type { PlayerEventMap } from '../player/player.events';
 import type { Player, SerializedPlayer } from '../player/player.entity';
 import { mapKeys, mapValues } from 'lodash-es';
 import { PLAYER_EVENTS } from '../player/player-enums';
-// augments the paylod of an event with additional data
-// for example: a unit may emit a AFTER_MOVE event without a reference to itself
-// but the global event UNIT_AFTER_MOVE will have a reference to the unit who moved
-// this type represents that in a generic way
-// type EnrichEvent<TTuple extends [...any[]], TAdditional extends AnyObject> = {
-//   [Index in keyof TTuple]: TTuple[Index] extends AnyObject
-//     ? TTuple[Index] & TAdditional
-//     : TTuple;
-// } & { length: TTuple['length'] };
+import type {
+  CreatureEventMap,
+  EvolutionEventMap,
+  HeroEventMap,
+  ShardEventMap,
+  SpellEventMap
+} from '../card/card.events';
+import type { AnyCard } from '../card/entities/card.entity';
+import type { Creature, SerializedCreature } from '../card/entities/creature.entity';
+import type { Evolution, SerializedEvolution } from '../card/entities/evolution.entity';
+import type { Hero, SerializedHero } from '../card/entities/hero.entity';
+import type { SerializedSpell, Spell } from '../card/entities/spell.entity';
+import type { SerializedShard, Shard } from '../card/entities/shard.entity';
 
-// type GlobalPlayerEvents = {
-//   [Event in PlayerEvent as `player.${Event}`]: EnrichEvent<
-//     PlayerEventMap[Event],
-//     { player: Player }
-//   >;
-// };
+type GameCardEventMap<TCard extends AnyCard> = TCard extends Creature
+  ? CreatureEventMap
+  : TCard extends Evolution
+    ? EvolutionEventMap
+    : TCard extends Hero
+      ? HeroEventMap
+      : TCard extends Spell
+        ? SpellEventMap
+        : TCard extends Shard
+          ? ShardEventMap
+          : `TCard needs to be an instance of Creature, Evolution, Hero, Spell, or Shard`;
+
+type GameCardEventSerialized<TCard extends AnyCard> = TCard extends Creature
+  ? SerializedCreature
+  : TCard extends Evolution
+    ? SerializedEvolution
+    : TCard extends Hero
+      ? SerializedHero
+      : TCard extends Spell
+        ? SerializedSpell
+        : TCard extends Shard
+          ? SerializedShard
+          : `TCard needs to be an instance of Creature, Evolution, Hero, Spell, or Shard`;
+
+type GameCardSerializedResult<
+  TCard extends AnyCard,
+  TMap extends GameCardEventMap<TCard>,
+  TEvent extends Values<TMap>
+> =
+  TEvent extends TypedEvent<any, any>
+    ? ReturnType<TEvent['serialize']> & { card: GameCardEventSerialized<TCard> }
+    : never;
+
+export class GameCardEvent<
+  TCard extends AnyCard,
+  TMap extends GameCardEventMap<TCard> = GameCardEventMap<TCard>,
+  TEvent extends Values<TMap> = Values<TMap>,
+  TSerialized extends GameCardSerializedResult<
+    TCard,
+    TMap,
+    TEvent
+  > = GameCardSerializedResult<TCard, TMap, TEvent>
+> extends TypedEvent<{ card: TCard; event: TEvent }, TSerialized> {
+  serialize() {
+    if (!(this.data.event instanceof TypedEvent)) {
+      throw new Error('Typescript moment');
+    }
+    return {
+      ...(this.data.event.serialize() as any),
+      player: this.data.card.serialize()
+    } as TSerialized;
+  }
+}
 
 export class GamePlayerEvent<TEvent extends Values<PlayerEventMap>> extends TypedEvent<
   { player: Player; event: TEvent },
@@ -35,7 +86,6 @@ export class GamePlayerEvent<TEvent extends Values<PlayerEventMap>> extends Type
     } as ReturnType<TEvent['serialize']> & { player: SerializedPlayer };
   }
 }
-
 export class GameInputStartEvent extends TypedEvent<
   { input: Input<any> },
   SerializedInput
@@ -89,13 +139,58 @@ type GameEventsBase = {
   'game.ready': GameReadyEvent;
   '*': GameStarEvent;
 };
+
 type GamePlayerEventMap = {
   [Event in keyof PlayerEventMap as `player.${Event}`]: GamePlayerEvent<
     PlayerEventMap[Event]
   >;
 };
 
-export type GameEventMap = Prettify<GameEventsBase & TurnEventMap & GamePlayerEventMap>;
+type GameCreatureEventMap = {
+  [Event in keyof CreatureEventMap as `card.${Event}`]: GameCardEvent<
+    Creature,
+    CreatureEventMap,
+    CreatureEventMap[Event]
+  >;
+};
+
+type GameEvolutionEventMap = {
+  [Event in keyof EvolutionEventMap as `card.${Event}`]: GameCardEvent<
+    Evolution,
+    EvolutionEventMap,
+    EvolutionEventMap[Event]
+  >;
+};
+
+type GameHeroEventMap = {
+  [Event in keyof HeroEventMap as `card.${Event}`]: GameCardEvent<
+    Hero,
+    HeroEventMap,
+    HeroEventMap[Event]
+  >;
+};
+
+type GameSpellEventMap = {
+  [Event in keyof SpellEventMap as `card.${Event}`]: GameCardEvent<Spell, SpellEventMap>;
+};
+type GameShardEventMap = {
+  [Event in keyof ShardEventMap as `card.${Event}`]: GameCardEvent<
+    Shard,
+    ShardEventMap,
+    ShardEventMap[Event]
+  >;
+};
+
+export type GameEventMap = Prettify<
+  GameEventsBase &
+    TurnEventMap &
+    GamePlayerEventMap &
+    GameCreatureEventMap &
+    GameEvolutionEventMap &
+    GameHeroEventMap &
+    GameSpellEventMap &
+    GameShardEventMap
+>;
 export type GameEventName = keyof GameEventMap;
 export type GameEvent = Values<GameEventMap>;
 

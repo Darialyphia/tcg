@@ -2,6 +2,8 @@ import { Entity } from '../entity';
 import { type Game } from '../game/game';
 import { type EmptyObject, type Point, type Serializable } from '@game/shared';
 import type { PlayerEventMap } from './player.events';
+import { PLAYER_EVENTS } from './player-enums';
+import { GamePlayerEvent } from '../game/game.events';
 
 type CardOptions = {
   blueprintId: string;
@@ -31,6 +33,7 @@ export class Player
   ) {
     super(options.id, {});
     this.game = game;
+    this.forwardListeners;
   }
 
   serialize() {
@@ -38,6 +41,17 @@ export class Player
       id: this.id,
       name: this.options.name
     };
+  }
+
+  forwardListeners() {
+    Object.values(PLAYER_EVENTS).forEach(eventName => {
+      this.on(eventName, event => {
+        this.game.emit(
+          `player.${eventName}`,
+          new GamePlayerEvent({ player: this, event }) as any
+        );
+      });
+    });
   }
 
   get opponent() {

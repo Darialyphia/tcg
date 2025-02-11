@@ -4,6 +4,8 @@ import type { ShardEventMap } from '../card.events';
 import type { EmptyObject } from '@game/shared';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
+import { GameCardEvent } from '../../game/game.events';
+import { SHARD_EVENTS } from '../card.enums';
 
 export type SerializedShard = SerializedCard;
 
@@ -17,9 +19,21 @@ export class Shard extends Card<
 > {
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, {}, options);
+    this.forwardListeners();
   }
 
   play() {}
+
+  forwardListeners() {
+    Object.values(SHARD_EVENTS).forEach(eventName => {
+      this.on(eventName, event => {
+        this.game.emit(
+          `card.${eventName}`,
+          new GameCardEvent({ card: this, event: event as any }) as any
+        );
+      });
+    });
+  }
 
   serialize() {
     return {

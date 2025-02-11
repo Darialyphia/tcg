@@ -6,6 +6,8 @@ import type { Attacker, Damage, Defender } from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import { HealthComponent } from '../../combat/health.component';
+import { CREATURE_EVENTS } from '../card.enums';
+import { GameCardEvent } from '../../game/game.events';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -44,6 +46,7 @@ export class Creature extends Card<
     this.health = new HealthComponent({
       initialValue: this.maxHp
     });
+    this.forwardListeners();
   }
 
   get atk(): number {
@@ -85,6 +88,17 @@ export class Creature extends Card<
   }
 
   play() {}
+
+  forwardListeners() {
+    Object.values(CREATURE_EVENTS).forEach(eventName => {
+      this.on(eventName, event => {
+        this.game.emit(
+          `card.${eventName}`,
+          new GameCardEvent({ card: this, event: event as any }) as any
+        );
+      });
+    });
+  }
 
   serialize(): SerializedCreature {
     return {

@@ -1,6 +1,5 @@
 import { System } from '../system';
 import { Player, type PlayerOptions } from './player.entity';
-import { PLAYER_EVENTS } from './player-enums';
 
 export type PlayerSystemOptions = {
   players: Array<PlayerOptions>;
@@ -13,7 +12,6 @@ export class PlayerSystem extends System<PlayerSystemOptions> {
     options.players.forEach(p => {
       const player = new Player(this.game, p);
       this.playerMap.set(p.id, player);
-      this.forwardListeners(player);
     });
   }
 
@@ -27,13 +25,5 @@ export class PlayerSystem extends System<PlayerSystemOptions> {
 
   get players() {
     return [...this.playerMap.values()];
-  }
-
-  forwardListeners(player: Player) {
-    Object.values(PLAYER_EVENTS).forEach(eventName => {
-      player.on(eventName, event => {
-        this.game.emit(`player.${eventName}`, { ...event, player } as any);
-      });
-    });
   }
 }

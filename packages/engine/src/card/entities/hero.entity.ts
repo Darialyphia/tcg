@@ -6,6 +6,8 @@ import { Interceptable } from '../../utils/interceptable';
 import type { Player } from '../../player/player.entity';
 import type { Game } from '../../game/game';
 import { HealthComponent } from '../../combat/health.component';
+import { HERO_EVENTS } from '../card.enums';
+import { GameCardEvent } from '../../game/game.events';
 
 export type SerializedHero = SerializedCard & {
   maxHp: number;
@@ -35,6 +37,7 @@ export class Hero extends Card<
     this.health = new HealthComponent({
       initialValue: this.maxHp
     });
+    this.forwardListeners();
   }
 
   get maxHp(): number {
@@ -50,6 +53,17 @@ export class Hero extends Card<
   }
 
   play() {}
+
+  forwardListeners() {
+    Object.values(HERO_EVENTS).forEach(eventName => {
+      this.on(eventName, event => {
+        this.game.emit(
+          `card.${eventName}`,
+          new GameCardEvent({ card: this, event: event as any }) as any
+        );
+      });
+    });
+  }
 
   serialize(): SerializedHero {
     return {
