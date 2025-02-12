@@ -14,6 +14,7 @@ import type {
   ShardBlueprint,
   SpellBlueprint
 } from '../card/card-blueprint';
+import { CardManagerComponent } from '../card/card-manager.component';
 
 export type PlayerOptions = {
   id: string;
@@ -36,6 +37,8 @@ export class Player
 {
   private game: Game;
 
+  private readonly cards: CardManagerComponent;
+
   readonly hero: Hero;
 
   constructor(
@@ -45,6 +48,11 @@ export class Player
     super(options.id, {});
     this.game = game;
     this.hero = createCard(game, this, options.deck.hero);
+    this.cards = new CardManagerComponent(game, this, {
+      deck: options.deck.cards,
+      maxHandSize: this.game.config.INITIAL_HAND_SIZE,
+      shouldShuffleDeck: this.game.config.SHUFFLE_DECK_AT_START_OF_GAME
+    });
     this.forwardListeners();
   }
 
@@ -72,6 +80,38 @@ export class Player
 
   get boardSide() {
     return this.game.board.sides.find(side => side.player.equals(this))!;
+  }
+
+  get maxHandSize() {
+    return this.game.config.MAX_HAND_SIZE;
+  }
+
+  get hand() {
+    return this.cards.hand;
+  }
+
+  get deck() {
+    return this.cards.deck;
+  }
+
+  get deckSize() {
+    return this.cards.deckSize;
+  }
+
+  get remainingCardsInDeck() {
+    return this.cards.remainingCardsInDeck;
+  }
+
+  get getCardAt() {
+    return this.cards.getCardAt.bind(this.cards);
+  }
+
+  get draw() {
+    return this.cards.draw.bind(this.cards);
+  }
+
+  get addToHand() {
+    return this.cards.addToHand.bind(this.cards);
   }
 
   startTurn() {}

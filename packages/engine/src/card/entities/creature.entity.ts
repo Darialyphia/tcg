@@ -103,7 +103,14 @@ export class Creature extends Card<
     });
   }
 
-  play() {}
+  play() {
+    throw new Error('Cannot use Creature.play(). Use Creature.playAt() instead');
+  }
+
+  playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {
+    this.player.boardSide.summonCreature(this, zone, slot);
+    this.blueprint.onPlay(this.game, this);
+  }
 
   forwardListeners() {
     Object.values(CREATURE_EVENTS).forEach(eventName => {

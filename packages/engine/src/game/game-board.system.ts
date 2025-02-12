@@ -93,6 +93,16 @@ class BoardSide {
     return this.getZone(zone).creatures[slot];
   }
 
+  getAllCardsInPlay(): AnyCard[] {
+    return [
+      ...this.attackZone.creatures.filter(isDefined),
+      ...this.defenseZone.creatures.filter(isDefined),
+      ...this.attackZone.enchants,
+      ...this.defenseZone.enchants,
+      ...this.heroZone.enchants
+    ];
+  }
+
   summonCreature(
     card: Creature | Evolution,
     zone: 'attack' | 'defense',
