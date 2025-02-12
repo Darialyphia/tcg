@@ -1,6 +1,6 @@
 import { type AnyObject, type EmptyObject } from '@game/shared';
-import { System } from '../system';
-import { type GameStarEvent, type SerializedStarEvent } from './game.events';
+import { System } from '../../system';
+import { type GameStarEvent, type SerializedStarEvent } from '../game.events';
 
 export type GameStateSnapshot = {
   id: number;

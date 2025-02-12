@@ -1,14 +1,13 @@
 import { assert, isDefined, type Nullable } from '@game/shared';
-import { Creature } from '../card/entities/creature.entity';
-import { Evolution } from '../card/entities/evolution.entity';
-import { Spell } from '../card/entities/spell.entity';
-import type { Hero } from '../card/entities/hero.entity';
-import type { Shard } from '../card/entities/shard.entity';
-import type { AnyCard } from '../card/entities/card.entity';
-import { System } from '../system';
-import type { Player } from '../player/player.entity';
-import { SPELL_KINDS } from '../card/card.enums';
-import { PLAYER_EVENTS } from '../player/player-enums';
+import { SPELL_KINDS } from '../../card/card.enums';
+import type { AnyCard } from '../../card/entities/card.entity';
+import { Creature } from '../../card/entities/creature.entity';
+import { Evolution } from '../../card/entities/evolution.entity';
+import type { Hero } from '../../card/entities/hero.entity';
+import type { Shard } from '../../card/entities/shard.entity';
+import { Spell } from '../../card/entities/spell.entity';
+import type { Player } from '../../player/player.entity';
+import { System } from '../../system';
 
 export type CreatureSlot = 0 | 1 | 2 | 3 | 4;
 
@@ -46,8 +45,6 @@ class BoardSide {
     this.heroZone = { hero: player.hero, enchants: [] };
     this.manaZone = [];
     this.shardZone = null;
-
-    player.on(PLAYER_EVENTS.START_TURN, this.onTurnStart.bind(this));
   }
 
   get attackZone(): CreatureZone {
@@ -62,7 +59,7 @@ class BoardSide {
     return zone === 'attack' ? this.attackZone : this.defenseZone;
   }
 
-  private onTurnStart() {
+  convertShardToMana() {
     if (!this.shardZone) return;
     this.manaZone.push(this.shardZone);
     this.shardZone = null;

@@ -6,11 +6,12 @@ import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import { SPELL_EVENTS, type SpellKind } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
-import type { SelectedTarget } from '../../game/interaction.system';
+import type { SelectedTarget } from '../../game/systems/interaction.system';
+import { assert } from '@game/shared';
 
 export type SerializedSpell = SerializedCard & {
   spellKind: SpellKind;
-  manacost: number;
+  manaCost: number;
 };
 
 const makeInterceptors = () => ({
@@ -38,22 +39,37 @@ export class Spell extends Card<
     return this.blueprint.spellKind;
   }
 
+  private doPlay(targets: SelectedTarget[]) {
+    this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
+    this.player.spendMana(this.manaCost);
+    this.blueprint.onPlay(this.game, this, targets);
+    this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
+  }
+
+  selectTargets(onComplete: (targets: SelectedTarget[]) => void) {
+    this.game.interaction.startSelectingTargets({
+      getNextTarget: targets => this.blueprint.followup.targets[targets.length] ?? null,
+      canCommit: this.blueprint.followup.canCommit,
+      onComplete
+    });
+  }
+
   play(targets?: SelectedTarget[]) {
     if (targets) {
-      this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
-      this.blueprint.onPlay(this.game, this, targets);
-      this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
+      this.doPlay(targets);
     } else {
-      this.game.interaction.startSelectingTargets({
-        getNextTarget: targets => this.blueprint.followup.targets[targets.length] ?? null,
-        canCommit: this.blueprint.followup.canCommit,
-        onComplete: targets => {
-          this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
-          this.blueprint.onPlay(this.game, this, targets);
-          this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
-        }
-      });
+      this.selectTargets(this.doPlay.bind(this));
     }
+  }
+
+  addToChain() {
+    assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
+    const chain = this.game.effectChainSystem.currentChain;
+    this.selectTargets(targets => {
+      chain.addEffect(() => {
+        this.play(targets);
+      }, this.player);
+    });
   }
 
   forwardListeners() {
@@ -67,7 +83,7 @@ export class Spell extends Card<
     });
   }
 
-  serialize() {
+  serialize(): SerializedSpell {
     return {
       id: this.id,
       name: this.name,
@@ -78,7 +94,7 @@ export class Spell extends Card<
       kind: this.kind,
       rarity: this.rarity,
       spellKind: this.spellKind,
-      manacost: this.manaCost
+      manaCost: this.manaCost
     };
   }
 }

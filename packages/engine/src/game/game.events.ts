@@ -2,7 +2,7 @@ import type { EmptyObject, Prettify, Values } from '@game/shared';
 import type { SerializedInput } from '../input/input-system';
 import { TypedEvent } from '../utils/typed-emitter';
 import type { Input } from '../input/input';
-import { TURN_EVENTS, type TurnEventMap } from './turn-system';
+import { TURN_EVENTS, type TurnEventMap } from './systems/turn.system';
 import type { PlayerEventMap } from '../player/player.events';
 import type { Player, SerializedPlayer } from '../player/player.entity';
 import { mapKeys, mapValues } from 'lodash-es';

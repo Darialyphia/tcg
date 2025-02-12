@@ -19,7 +19,7 @@ export class CardSet
     super(id, {});
   }
 
-  serialize(): { id: string; name: string } {
+  serialize(): SerializedCardSet {
     return {
       id: this.id,
       name: this.name

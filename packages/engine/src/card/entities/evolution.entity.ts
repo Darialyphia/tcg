@@ -1,5 +1,5 @@
 import { Card, type AnyCard, type CardOptions, type SerializedCard } from './card.entity';
-import type { EvolutionBlueprint } from '../card-blueprint';
+import type { Ability, EvolutionBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
 import {
   CardAfterPlayEvent,
@@ -14,7 +14,9 @@ import { EVOLUTION_EVENTS } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
 import { Creature } from './creature.entity';
 import type { DeckCard } from './deck.entity';
-import type { CreatureSlot } from '../../game/game-board.system';
+import type { CreatureSlot } from '../../game/systems/game-board.system';
+import { assert, isDefined } from '@game/shared';
+import type { SelectedTarget } from '../../game/systems/interaction.system';
 
 export type SerializedEvolution = SerializedCard & {
   atk: number;
@@ -175,6 +177,27 @@ export class Evolution extends Card<
   playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {
     this.player.boardSide.summonCreature(this, zone, slot);
     this.blueprint.onPlay(this.game, this);
+  }
+
+  private resolveAbility(ability: Ability<Evolution>, targets: SelectedTarget[]) {
+    this.player.spendMana(ability.manaCost);
+    ability.onResolve(this.game, this, targets);
+  }
+
+  useAbility(index: number, targets?: SelectedTarget[]) {
+    const ability = this.blueprint.abilities[index];
+    assert(isDefined(ability), 'Ability not found');
+    if (targets) {
+      this.resolveAbility(ability, targets);
+    } else {
+      this.game.interaction.startSelectingTargets({
+        getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
+        canCommit: ability.followup.canCommit,
+        onComplete: targets => {
+          this.resolveAbility(ability, targets);
+        }
+      });
+    }
   }
 
   forwardListeners() {

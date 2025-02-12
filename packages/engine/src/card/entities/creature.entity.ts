@@ -1,5 +1,5 @@
 import { Card, type AnyCard, type CardOptions, type SerializedCard } from './card.entity';
-import type { CreatureBlueprint } from '../card-blueprint';
+import type { Ability, CreatureBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
 import {
   CardAfterPlayEvent,
@@ -12,8 +12,9 @@ import type { Player } from '../../player/player.entity';
 import { HealthComponent } from '../../combat/health.component';
 import { CREATURE_EVENTS } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
-import type { CreatureSlot } from '../../game/game-board.system';
+import type { CreatureSlot } from '../../game/systems/game-board.system';
 import { assert, isDefined, type Nullable } from '@game/shared';
+import type { SelectedTarget } from '../../game/systems/interaction.system';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -134,8 +135,54 @@ export class Creature extends Card<
   }
 
   playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {
+    this.player.spendMana(this.manaCost);
+
     this.player.boardSide.summonCreature(this, zone, slot);
     this.blueprint.onPlay(this.game, this);
+  }
+
+  private resolveAbility(ability: Ability<Creature>, targets: SelectedTarget[]) {
+    this.player.spendMana(ability.manaCost);
+    ability.onResolve(this.game, this, targets);
+  }
+
+  selectAbilityTargets(
+    ability: Ability<Creature>,
+    onComplete: (targets: SelectedTarget[]) => void
+  ) {
+    assert(
+      this.blueprint.abilities.includes(ability),
+      "The ability doesn't belong to this creature"
+    );
+
+    this.game.interaction.startSelectingTargets({
+      getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
+      canCommit: ability.followup.canCommit,
+      onComplete
+    });
+  }
+
+  useAbility(index: number, targets?: SelectedTarget[]) {
+    const ability = this.blueprint.abilities[index];
+    assert(isDefined(ability), 'Ability not found');
+    if (targets) {
+      this.resolveAbility(ability, targets);
+    } else {
+      this.selectAbilityTargets(ability, targets => {
+        this.resolveAbility(ability, targets);
+      });
+    }
+  }
+
+  addAbilityToChain(index: number) {
+    assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
+    const ability = this.blueprint.abilities[index];
+    assert(isDefined(ability), 'Ability not found');
+    this.game.effectChainSystem.currentChain.addEffect(() => {
+      this.selectAbilityTargets(ability, targets => {
+        this.resolveAbility(this.blueprint.abilities[index], targets);
+      });
+    }, this.player);
   }
 
   forwardListeners() {

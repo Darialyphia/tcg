@@ -1,5 +1,5 @@
 import { StateMachine, transition, type EmptyObject, type Values } from '@game/shared';
-import { System } from '../system';
+import { System } from '../../system';
 
 export const GAME_PHASES = {
   MULLIGAN: 'mulligan',

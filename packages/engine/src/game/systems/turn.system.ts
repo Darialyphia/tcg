@@ -1,8 +1,8 @@
 import type { Values } from '@game/shared';
-import { TypedEvent, TypedEventEmitter } from '../utils/typed-emitter';
-import { System } from '../system';
-import type { Player } from '../player/player.entity';
-import { GAME_EVENTS } from './game.events';
+import type { Player } from '../../player/player.entity';
+import { System } from '../../system';
+import { TypedEvent, TypedEventEmitter } from '../../utils/typed-emitter';
+import { GAME_EVENTS } from '../game.events';
 
 export const TURN_EVENTS = {
   TURN_START: 'turn_start',
@@ -11,30 +11,11 @@ export const TURN_EVENTS = {
 
 export type TurnEvent = Values<typeof TURN_EVENTS>;
 
-export class TurnStartEvent extends TypedEvent<
+export class GameTurnEvent extends TypedEvent<
   { turnCount: number },
   { turnCount: number }
 > {
-  get turnCount() {
-    return this.data.turnCount;
-  }
-
-  serialize() {
-    return {
-      turnCount: this.data.turnCount
-    };
-  }
-}
-
-export class TurnEndEvent extends TypedEvent<
-  { turnCount: number },
-  { turnCount: number }
-> {
-  get turnCount() {
-    return this.data.turnCount;
-  }
-
-  serialize() {
+  serialize(): { turnCount: number } {
     return {
       turnCount: this.data.turnCount
     };
@@ -42,12 +23,11 @@ export class TurnEndEvent extends TypedEvent<
 }
 
 export type TurnEventMap = {
-  [TURN_EVENTS.TURN_START]: TurnStartEvent;
-  [TURN_EVENTS.TURN_END]: TurnEndEvent;
+  [TURN_EVENTS.TURN_START]: GameTurnEvent;
+  [TURN_EVENTS.TURN_END]: GameTurnEvent;
 };
-
 export class TurnSystem extends System<never> {
-  private _turnCount = 0;
+  private _elapsedTurns = 0;
 
   private _activePlayer!: Player;
 
@@ -78,8 +58,8 @@ export class TurnSystem extends System<never> {
     return this._activePlayer;
   }
 
-  get turnCount() {
-    return this._turnCount;
+  get elapsedTurns() {
+    return this._elapsedTurns;
   }
 
   get on() {
@@ -95,18 +75,18 @@ export class TurnSystem extends System<never> {
   }
 
   startGameTurn() {
-    this._turnCount++;
     this.emitter.emit(
       TURN_EVENTS.TURN_START,
-      new TurnStartEvent({ turnCount: this.turnCount })
+      new GameTurnEvent({ turnCount: this.elapsedTurns })
     );
     this._activePlayer.startTurn();
   }
 
   endGameTurn() {
+    this._elapsedTurns++;
     this.emitter.emit(
       TURN_EVENTS.TURN_END,
-      new TurnEndEvent({ turnCount: this.turnCount })
+      new GameTurnEvent({ turnCount: this.elapsedTurns })
     );
   }
 

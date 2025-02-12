@@ -44,7 +44,7 @@ export class Shard extends Card<
     });
   }
 
-  serialize() {
+  serialize(): SerializedShard {
     return {
       id: this.id,
       name: this.name,

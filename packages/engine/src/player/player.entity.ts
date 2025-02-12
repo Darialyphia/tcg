@@ -1,7 +1,13 @@
 import { Entity } from '../entity';
 import { type Game } from '../game/game';
-import { type EmptyObject, type Serializable } from '@game/shared';
-import type { PlayerEventMap } from './player.events';
+import { type EmptyObject, type Nullable, type Serializable } from '@game/shared';
+import {
+  PlayCardEvent,
+  PlayerEndTurnEvent,
+  PlayerManaChangeEvent,
+  PlayerStartTurnEvent,
+  type PlayerEventMap
+} from './player.events';
 import { PLAYER_EVENTS } from './player-enums';
 import { GamePlayerEvent } from '../game/game.events';
 import { createCard } from '../card/card.factory';
@@ -15,6 +21,8 @@ import type {
   SpellBlueprint
 } from '../card/card-blueprint';
 import { CardManagerComponent } from '../card/card-manager.component';
+import type { DeckCard } from '../card/entities/deck.entity';
+import type { Evolution } from '../card/entities/evolution.entity';
 
 export type PlayerOptions = {
   id: string;
@@ -41,6 +49,12 @@ export class Player
 
   readonly hero: Hero;
 
+  readonly evolutions: Evolution[];
+
+  _mana = 0;
+
+  currentlyPlayedCard: Nullable<DeckCard> = null;
+
   constructor(
     game: Game,
     private options: PlayerOptions
@@ -53,6 +67,9 @@ export class Player
       maxHandSize: this.game.config.INITIAL_HAND_SIZE,
       shouldShuffleDeck: this.game.config.SHUFFLE_DECK_AT_START_OF_GAME
     });
+    this.evolutions = options.deck.evolutions.map(evolutionOptions =>
+      createCard(game, this, evolutionOptions)
+    );
     this.forwardListeners();
   }
 
@@ -122,5 +139,94 @@ export class Player
     return this.cards.addToHand.bind(this.cards);
   }
 
-  startTurn() {}
+  get maxMana() {
+    return this.boardSide.totalMana;
+  }
+
+  get mana() {
+    return this._mana;
+  }
+
+  private changeMana(amount: number) {
+    this.emitter.emit(
+      PLAYER_EVENTS.BEFORE_MANA_CHANGE,
+      new PlayerManaChangeEvent({ amount })
+    );
+    this._mana = Math.min(0, this._mana + amount);
+    this.emitter.emit(
+      PLAYER_EVENTS.AFTER_MANA_CHANGE,
+      new PlayerManaChangeEvent({ amount })
+    );
+  }
+
+  spendMana(amount: number) {
+    if (amount === 0) return;
+    this.changeMana(-amount);
+  }
+
+  gainMana(amount: number) {
+    if (amount === 0) return;
+    this.changeMana(amount);
+  }
+
+  canSpendMana(amount: number) {
+    return this.mana >= amount;
+  }
+
+  get attackZoneCreatures() {
+    return this.boardSide.getCreatures('attack');
+  }
+
+  get defenseZoneCreatures() {
+    return this.boardSide.getCreatures('defense');
+  }
+
+  playCardAtIndex(index: number) {
+    const card = this.cards.getCardAt(index);
+    if (!card) return;
+
+    this.playCard(card);
+  }
+
+  playCard(card: DeckCard) {
+    this.emitter.emit(PLAYER_EVENTS.BEFORE_PLAY_CARD, new PlayCardEvent({ card }));
+    this.currentlyPlayedCard = card;
+    this.cards.play(card);
+    this.currentlyPlayedCard = null;
+    this.emitter.emit(PLAYER_EVENTS.AFTER_PLAY_CARD, new PlayCardEvent({ card }));
+  }
+
+  playEvolutionAt(index: number) {
+    const evolution = this.evolutions[index];
+    if (!evolution) return;
+
+    this.playEvolution(evolution);
+  }
+
+  playEvolution(evolution: Evolution) {
+    this.emitter.emit(
+      PLAYER_EVENTS.BEFORE_PLAY_CARD,
+      new PlayCardEvent({ card: evolution })
+    );
+
+    evolution.play();
+
+    this.emitter.emit(
+      PLAYER_EVENTS.AFTER_PLAY_CARD,
+      new PlayCardEvent({ card: evolution })
+    );
+  }
+
+  startTurn() {
+    this.boardSide.convertShardToMana();
+    this._mana = this.maxMana;
+
+    this.draw(this.game.config.CARDS_DRAWN_PER_TURN);
+
+    this.emitter.emit(PLAYER_EVENTS.START_TURN, new PlayerStartTurnEvent({}));
+  }
+
+  endTurn() {
+    this.emitter.emit(PLAYER_EVENTS.END_TURN, new PlayerEndTurnEvent({}));
+  }
 }

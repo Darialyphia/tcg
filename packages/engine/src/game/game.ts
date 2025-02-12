@@ -2,18 +2,18 @@ import { InputSystem, type SerializedInput } from '../input/input-system';
 import { defaultConfig, type Config } from '../config';
 import { TypedEventEmitter } from '../utils/typed-emitter';
 import { RngSystem } from '../rng/rng.system';
-import { GamePhaseSystem } from './game-phase.system';
-import { GameSnaphotSystem } from './game-snapshot.system';
 import { PlayerSystem } from '../player/player.system';
 import { GAME_EVENTS, GameReadyEvent, type GameEventMap } from './game.events';
-import { TurnSystem } from './turn-system';
-import { GameBoardSystem } from './game-board.system';
-import { InteractionSystem } from './interaction.system';
+import { GameBoardSystem } from './systems/game-board.system';
+import { GamePhaseSystem } from './systems/game-phase.system';
+import { GameSnaphotSystem } from './systems/game-snapshot.system';
+import { InteractionSystem } from './systems/interaction.system';
+import { TurnSystem } from './systems/turn.system';
+import { EffectChainSystem } from './systems/effect-chain.system';
 
 export type GameOptions = {
   id: string;
   rngSeed: string;
-  mapId: string;
   history?: SerializedInput[];
   configOverrides: Partial<Config>;
 };
@@ -34,6 +34,8 @@ export class Game {
   readonly gamePhaseSystem = new GamePhaseSystem(this);
 
   readonly interaction = new InteractionSystem(this);
+
+  readonly effectChainSystem = new EffectChainSystem(this);
 
   readonly board = new GameBoardSystem(this);
 
@@ -69,6 +71,7 @@ export class Game {
     this.board.initialize();
     this.serializer.initialize();
     this.turnSystem.initialize();
+    this.effectChainSystem.initialize();
 
     this.emit(GAME_EVENTS.READY, new GameReadyEvent({}));
   }

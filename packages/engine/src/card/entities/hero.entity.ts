@@ -1,5 +1,5 @@
 import { Card, type AnyCard, type CardOptions, type SerializedCard } from './card.entity';
-import type { HeroBlueprint } from '../card-blueprint';
+import type { Ability, HeroBlueprint } from '../card-blueprint';
 import type { HeroEventMap } from '../card.events';
 import type { Attacker, Damage } from '../../combat/damage';
 import { Interceptable } from '../../utils/interceptable';
@@ -8,6 +8,8 @@ import type { Game } from '../../game/game';
 import { HealthComponent } from '../../combat/health.component';
 import { HERO_EVENTS } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
+import { assert, isDefined } from '@game/shared';
+import type { SelectedTarget } from '../../game/systems/interaction.system';
 
 export type SerializedHero = SerializedCard & {
   maxHp: number;
@@ -50,6 +52,27 @@ export class Hero extends Card<
       damage,
       amount
     });
+  }
+
+  private resolveAbility(ability: Ability<Hero>, targets: SelectedTarget[]) {
+    this.player.spendMana(ability.manaCost);
+    ability.onResolve(this.game, this, targets);
+  }
+
+  useAbility(index: number, targets?: SelectedTarget[]) {
+    const ability = this.blueprint.abilities[index];
+    assert(isDefined(ability), 'Ability not found');
+    if (targets) {
+      this.resolveAbility(ability, targets);
+    } else {
+      this.game.interaction.startSelectingTargets({
+        getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
+        canCommit: ability.followup.canCommit,
+        onComplete: targets => {
+          this.resolveAbility(ability, targets);
+        }
+      });
+    }
   }
 
   play() {}

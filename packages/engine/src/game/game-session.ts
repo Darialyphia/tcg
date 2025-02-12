@@ -1,7 +1,7 @@
 import { type BetterOmit, type PartialBy } from '@game/shared';
 import { Game, type GameOptions } from './game';
 import type { SerializedInput } from '../input/input-system';
-import type { GameStateSnapshot } from './game-snapshot.system';
+import type { GameStateSnapshot } from './systems/game-snapshot.system';
 import { GAME_EVENTS } from './game.events';
 
 export type GameSessionOptions = BetterOmit<
@@ -12,13 +12,12 @@ export type GameSessionOptions = BetterOmit<
 };
 
 export class GameSession {
-  readonly game: Game;
+  private readonly game: Game;
 
   constructor(options: GameSessionOptions) {
     this.game = new Game({
       id: options.id ?? 'GAME_SESSION',
       rngSeed: options.rngSeed,
-      mapId: options.mapId,
       configOverrides: options.configOverrides ?? {}
     });
   }

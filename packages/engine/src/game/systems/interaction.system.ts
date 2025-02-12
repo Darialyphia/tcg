@@ -5,10 +5,10 @@ import {
   StateMachine,
   transition
 } from '@game/shared';
-import { System } from '../system';
-import type { AnyCard } from '../card/entities/card.entity';
-import type { Player } from '../player/player.entity';
 import type { CreatureSlot } from './game-board.system';
+import type { AnyCard } from '../../card/entities/card.entity';
+import type { Player } from '../../player/player.entity';
+import { System } from '../../system';
 
 export const INTERACTION_STATES = {
   IDLE: 'idle',
