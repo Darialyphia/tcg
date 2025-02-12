@@ -1,4 +1,5 @@
 import type { Game } from '../game/game';
+import type { EffectTarget, SelectedTarget } from '../game/interaction.system';
 import type { Keyword } from './card-keyword';
 import type {
   CARD_KINDS,
@@ -31,6 +32,13 @@ export type CreatureBlueprint = CardBlueprintBase & {
   keywords: Keyword[];
   maxHp: number;
   atk: number;
+  abilities: Array<{
+    followup: {
+      targets: EffectTarget[];
+      canCommit: (targets: SelectedTarget[]) => boolean;
+    };
+    onResolve: (game: Game, card: Creature, targets: SelectedTarget[]) => void;
+  }>;
   onInit(game: Game, card: Creature): void;
   onPlay(game: Game, card: Creature): void;
 };
@@ -39,7 +47,11 @@ export type SpellBlueprint = CardBlueprintBase & {
   kind: Extract<CardKind, typeof CARD_KINDS.SPELL>;
   manaCost: number;
   spellKind: SpellKind;
-  onPlay(game: Game, card: Spell): void;
+  followup: {
+    targets: EffectTarget[];
+    canCommit: (targets: SelectedTarget[]) => boolean;
+  };
+  onPlay(game: Game, card: Spell, targets: SelectedTarget[]): void;
 };
 
 export type ShardBlueprint = CardBlueprintBase & {
@@ -54,12 +66,26 @@ export type EvolutionBlueprint = CardBlueprintBase & {
   keywords: Keyword[];
   maxHp: number;
   atk: number;
+  abilities: Array<{
+    followup: {
+      targets: EffectTarget[];
+      canCommit: (targets: SelectedTarget[]) => boolean;
+    };
+    onResolve: (game: Game, card: Creature, targets: SelectedTarget[]) => void;
+  }>;
   onPlay(game: Game, card: Evolution): void;
 };
 
 export type HeroBlueprint = CardBlueprintBase & {
   kind: Extract<CardKind, typeof CARD_KINDS.HERO>;
   maxHp: number;
+  abilities: Array<{
+    followup: {
+      targets: EffectTarget[];
+      canCommit: (targets: SelectedTarget[]) => boolean;
+    };
+    onResolve: (game: Game, card: Creature, targets: SelectedTarget[]) => void;
+  }>;
 };
 
 export type CardBlueprint =

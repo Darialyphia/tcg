@@ -1,7 +1,11 @@
 import { Card, type AnyCard, type CardOptions, type SerializedCard } from './card.entity';
 import type { CreatureBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
-import type { CreatureEventMap } from '../card.events';
+import {
+  CardAfterPlayEvent,
+  CardBeforePlayEvent,
+  type CreatureEventMap
+} from '../card.events';
 import type { Attacker, Damage, Defender } from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
@@ -10,7 +14,8 @@ import { CREATURE_EVENTS } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
 import type { CreatureSlot } from '../../game/game-board.system';
 import type { Evolution } from './evolution.entity';
-import { isDefined } from '@game/shared';
+import { assert, isDefined } from '@game/shared';
+import { t } from 'typescript-fsm';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -103,8 +108,27 @@ export class Creature extends Card<
     });
   }
 
-  play() {
-    throw new Error('Cannot use Creature.play(). Use Creature.playAt() instead');
+  play(location?: { slot: CreatureSlot; zone: 'attack' | 'defense' }) {
+    if (isDefined(location)) {
+      this.playAt(location.zone, location.slot);
+    } else {
+      this.game.interaction.startSelectingTargets(
+        [
+          {
+            type: 'creatureSlot',
+            isElligible: ({ zone, slot }) => !this.player.boardSide.isOccupied(zone, slot)
+          }
+        ],
+        targets => !!targets.length,
+        targets => {
+          const target = targets[0];
+          assert(target.type === 'creatureSlot', 'Expected target to be a creature slot');
+          this.emitter.emit(CREATURE_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
+          this.playAt(target.zone, target.slot);
+          this.emitter.emit(CREATURE_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
+        }
+      );
+    }
   }
 
   playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {

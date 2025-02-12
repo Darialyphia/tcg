@@ -8,6 +8,7 @@ import { PlayerSystem } from '../player/player.system';
 import { GAME_EVENTS, GameReadyEvent, type GameEventMap } from './game.events';
 import { TurnSystem } from './turn-system';
 import { GameBoardSystem } from './game-board.system';
+import { InteractionSystem } from './interaction.system';
 
 export type GameOptions = {
   id: string;
@@ -31,6 +32,8 @@ export class Game {
   readonly playerSystem = new PlayerSystem(this);
 
   readonly gamePhaseSystem = new GamePhaseSystem(this);
+
+  readonly interaction = new InteractionSystem(this);
 
   readonly board = new GameBoardSystem(this);
 
@@ -62,6 +65,7 @@ export class Game {
     this.inputSystem.initialize(this.options.history ?? []);
     this.gamePhaseSystem.initialize();
     this.playerSystem.initialize({} as any);
+    this.interaction.initialize();
     this.board.initialize();
     this.serializer.initialize();
     this.turnSystem.initialize();

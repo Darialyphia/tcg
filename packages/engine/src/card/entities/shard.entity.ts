@@ -1,6 +1,10 @@
 import { Card, type CardOptions, type SerializedCard } from './card.entity';
 import type { ShardBlueprint } from '../card-blueprint';
-import type { ShardEventMap } from '../card.events';
+import {
+  CardAfterPlayEvent,
+  CardBeforePlayEvent,
+  type ShardEventMap
+} from '../card.events';
 import type { EmptyObject } from '@game/shared';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
@@ -23,8 +27,10 @@ export class Shard extends Card<
   }
 
   play() {
+    this.emitter.emit(SHARD_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
     this.player.boardSide.placeShard(this);
     this.blueprint.onPlay(this.game, this);
+    this.emitter.emit(SHARD_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
   }
 
   forwardListeners() {

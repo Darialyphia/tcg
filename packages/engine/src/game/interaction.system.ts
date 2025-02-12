@@ -28,7 +28,7 @@ export const INTERACTION_STATE_TRANSITIONS = {
 } as const;
 export type Interactiontransition = Values<typeof INTERACTION_STATE_TRANSITIONS>;
 
-type EffectTarget =
+export type EffectTarget =
   | {
       type: 'card';
       isElligible: (card: AnyCard) => boolean;
@@ -38,7 +38,7 @@ type EffectTarget =
       isElligible: (opts: { zone: 'attack' | 'defense'; slot: CreatureSlot }) => boolean;
     };
 
-type SelectedTarget =
+export type SelectedTarget =
   | {
       type: 'card';
       card: AnyCard;
@@ -53,7 +53,7 @@ export type InteractionStateContext =
   | {
       state: 'selecting-card-targets';
       ctx: {
-        minTargetCount: number;
+        canCommit: (targets: SelectedTarget[]) => boolean;
         targets: EffectTarget[];
         selectedTargets: SelectedTarget[];
         onComplete: (targets: SelectedTarget[]) => void;
@@ -130,7 +130,7 @@ export class InteractionSystem extends System<never> {
 
   startSelectingTargets(
     targets: EffectTarget[],
-    minTargetCount: number,
+    canCommit: (targets: SelectedTarget[]) => boolean,
     onComplete: (targets: SelectedTarget[]) => void
   ) {
     assert(
@@ -142,8 +142,8 @@ export class InteractionSystem extends System<never> {
       state: 'selecting-card-targets',
       ctx: {
         targets,
-        minTargetCount,
         selectedTargets: [],
+        canCommit,
         onComplete
       }
     };
@@ -167,7 +167,7 @@ export class InteractionSystem extends System<never> {
       'Invalid state'
     );
 
-    if (this._context.ctx.selectedTargets.length === this._context.ctx.minTargetCount) {
+    if (this._context.ctx.selectedTargets.length === this._context.ctx.targets.length) {
       this.commitTargets();
     }
   }
