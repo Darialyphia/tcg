@@ -1,13 +1,20 @@
 import { Card, type AnyCard, type CardOptions, type SerializedCard } from './card.entity';
-import type { CreatureBlueprint } from '../card-blueprint';
+import type { EvolutionBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
-import type { CreatureEventMap } from '../card.events';
+import {
+  CardAfterPlayEvent,
+  CardBeforePlayEvent,
+  type EvolutionEventMap
+} from '../card.events';
 import type { Defender, Attacker, Damage } from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import { HealthComponent } from '../../combat/health.component';
 import { EVOLUTION_EVENTS } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
+import { Creature } from './creature.entity';
+import type { DeckCard } from './deck.entity';
+import type { CreatureSlot } from '../../game/game-board.system';
 
 export type SerializedEvolution = SerializedCard & {
   atk: number;
@@ -34,9 +41,9 @@ type EvolutionInterceptors = ReturnType<typeof makeInterceptors>;
 
 export class Evolution extends Card<
   SerializedEvolution,
-  CreatureEventMap,
+  EvolutionEventMap,
   EvolutionInterceptors,
-  CreatureBlueprint
+  EvolutionBlueprint
 > {
   readonly health: HealthComponent;
 
@@ -91,7 +98,84 @@ export class Evolution extends Card<
     });
   }
 
-  play() {}
+  private selectTributes(onComplete: (targets: Array<Creature | Evolution>) => void) {
+    this.game.interaction.startSelectingTargets<'card'>({
+      getNextTarget: targets => {
+        if (targets.length === 0) {
+          return {
+            type: 'card',
+            isElligible: card => {
+              if (!card.player.equals(this.player)) return false;
+              if (!(card instanceof Creature || card instanceof Evolution)) return false;
+              if (!card.position) return false;
+              return card.job === this.job;
+            }
+          };
+        }
+
+        return {
+          type: 'card',
+          isElligible: card => {
+            if (!card.player.equals(this.player)) return false;
+            if (!(card instanceof Creature || card instanceof Evolution)) return false;
+            const isInHand = card.player.hand.some(card => card.equals(card));
+            if (!card.position || !isInHand) return false;
+            const remainingCost =
+              this.manaCost -
+              targets.reduce(
+                (acc, target) => acc + (target.card as Creature | Evolution).manaCost,
+                0
+              );
+            return card.manaCost <= remainingCost;
+          }
+        };
+      },
+      canCommit: targets => {
+        const totalCost = targets.reduce(
+          (acc, target) => acc + (target.card as Creature | Evolution).manaCost,
+          0
+        );
+        return totalCost === this.manaCost;
+      },
+      onComplete: tributeTargets => {
+        onComplete(tributeTargets.map(target => target.card as Creature | Evolution));
+      }
+    });
+  }
+
+  play() {
+    this.selectTributes(tributeTargets => {
+      this.game.interaction.startSelectingTargets<'creatureSlot'>({
+        getNextTarget: targets => {
+          if (targets.length) {
+            return null;
+          }
+
+          return {
+            type: 'creatureSlot',
+            isElligible: ({ zone, slot }) => !this.player.boardSide.isOccupied(zone, slot)
+          };
+        },
+        canCommit: targets => targets.length > 0,
+        onComplete: targets => {
+          const target = targets[0];
+
+          tributeTargets.forEach(target => {
+            this.player.discard(target as DeckCard);
+            this.player.boardSide.remove(target as Creature | Evolution);
+          });
+          this.emitter.emit(EVOLUTION_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
+          this.playAt(target.zone, target.slot);
+          this.emitter.emit(EVOLUTION_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
+        }
+      });
+    });
+  }
+
+  playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {
+    this.player.boardSide.summonCreature(this, zone, slot);
+    this.blueprint.onPlay(this.game, this);
+  }
 
   forwardListeners() {
     Object.values(EVOLUTION_EVENTS).forEach(eventName => {

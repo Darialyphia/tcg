@@ -54,7 +54,7 @@ export type InteractionStateContext =
       state: 'selecting-card-targets';
       ctx: {
         canCommit: (targets: SelectedTarget[]) => boolean;
-        targets: EffectTarget[];
+        getNextTarget: (targets: SelectedTarget[]) => EffectTarget | null;
         selectedTargets: SelectedTarget[];
         onComplete: (targets: SelectedTarget[]) => void;
       };
@@ -128,11 +128,15 @@ export class InteractionSystem extends System<never> {
     return this._context;
   }
 
-  startSelectingTargets(
-    targets: EffectTarget[],
-    canCommit: (targets: SelectedTarget[]) => boolean,
-    onComplete: (targets: SelectedTarget[]) => void
-  ) {
+  startSelectingTargets<T extends EffectTarget['type'] = EffectTarget['type']>({
+    getNextTarget,
+    canCommit,
+    onComplete
+  }: {
+    getNextTarget: (targets: Array<SelectedTarget & { type: T }>) => EffectTarget | null;
+    canCommit: (targets: Array<SelectedTarget & { type: T }>) => boolean;
+    onComplete: (targets: Array<SelectedTarget & { type: T }>) => void;
+  }) {
     assert(
       this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.START_SELECTING_TARGETS),
       'Cannot play card'
@@ -141,10 +145,12 @@ export class InteractionSystem extends System<never> {
     this._context = {
       state: 'selecting-card-targets',
       ctx: {
-        targets,
+        getNextTarget: getNextTarget as (
+          targets: SelectedTarget[]
+        ) => EffectTarget | null,
         selectedTargets: [],
-        canCommit,
-        onComplete
+        canCommit: canCommit as (targets: SelectedTarget[]) => boolean,
+        onComplete: onComplete as (targets: SelectedTarget[]) => void
       }
     };
     this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.START_SELECTING_TARGETS);
@@ -167,7 +173,7 @@ export class InteractionSystem extends System<never> {
       'Invalid state'
     );
 
-    if (this._context.ctx.selectedTargets.length === this._context.ctx.targets.length) {
+    if (this._context.ctx.getNextTarget(this._context.ctx.selectedTargets)) {
       this.commitTargets();
     }
   }
@@ -181,6 +187,11 @@ export class InteractionSystem extends System<never> {
       this._context.state === INTERACTION_STATES.SELECTING_CARD_TARGETS,
       'Invalid interaction state context'
     );
+    assert(
+      this._context.ctx.canCommit(this._context.ctx.selectedTargets),
+      'Cannot commit targets'
+    );
+
     const { selectedTargets, onComplete } = this._context.ctx;
     this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.COMMIT_TARGETS);
     this._context = {

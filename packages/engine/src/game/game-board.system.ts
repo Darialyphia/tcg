@@ -1,7 +1,7 @@
 import { assert, isDefined, type Nullable } from '@game/shared';
-import type { Creature } from '../card/entities/creature.entity';
-import type { Evolution } from '../card/entities/evolution.entity';
-import type { Spell } from '../card/entities/spell.entity';
+import { Creature } from '../card/entities/creature.entity';
+import { Evolution } from '../card/entities/evolution.entity';
+import { Spell } from '../card/entities/spell.entity';
 import type { Hero } from '../card/entities/hero.entity';
 import type { Shard } from '../card/entities/shard.entity';
 import type { AnyCard } from '../card/entities/card.entity';
@@ -170,6 +170,23 @@ class BoardSide {
   placeShard(shard: Shard) {
     assert(!this.shardZone, 'Shard zone is already occupied');
     this.shardZone = shard;
+  }
+
+  remove(card: Creature | Evolution | Spell) {
+    if (card instanceof Creature || card instanceof Evolution) {
+      const zone = card.position!.zone;
+      this.getZone(zone).creatures[card.position!.slot] = null;
+    } else if (card instanceof Spell) {
+      this.attackZone.enchants = this.attackZone.enchants.filter(
+        enchant => !enchant.equals(card)
+      );
+      this.defenseZone.enchants = this.defenseZone.enchants.filter(
+        enchant => !enchant.equals(card)
+      );
+      this.heroZone.enchants = this.heroZone.enchants.filter(
+        enchant => !enchant.equals(card)
+      );
+    }
   }
 
   get totalMana() {

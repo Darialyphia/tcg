@@ -13,9 +13,7 @@ import { HealthComponent } from '../../combat/health.component';
 import { CREATURE_EVENTS } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
 import type { CreatureSlot } from '../../game/game-board.system';
-import type { Evolution } from './evolution.entity';
-import { assert, isDefined } from '@game/shared';
-import { t } from 'typescript-fsm';
+import { assert, isDefined, type Nullable } from '@game/shared';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -81,7 +79,7 @@ export class Creature extends Card<
     return this.blueprint.job;
   }
 
-  get position() {
+  get position(): Nullable<{ zone: 'attack' | 'defense'; slot: CreatureSlot }> {
     return this.player.boardSide.getPositionFor(this);
   }
 
@@ -112,22 +110,26 @@ export class Creature extends Card<
     if (isDefined(location)) {
       this.playAt(location.zone, location.slot);
     } else {
-      this.game.interaction.startSelectingTargets(
-        [
-          {
+      this.game.interaction.startSelectingTargets({
+        getNextTarget: targets => {
+          if (targets.length) {
+            return null;
+          }
+
+          return {
             type: 'creatureSlot',
             isElligible: ({ zone, slot }) => !this.player.boardSide.isOccupied(zone, slot)
-          }
-        ],
-        targets => !!targets.length,
-        targets => {
+          };
+        },
+        canCommit: targets => targets.length > 0,
+        onComplete: targets => {
           const target = targets[0];
           assert(target.type === 'creatureSlot', 'Expected target to be a creature slot');
           this.emitter.emit(CREATURE_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
           this.playAt(target.zone, target.slot);
           this.emitter.emit(CREATURE_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
         }
-      );
+      });
     }
   }
 

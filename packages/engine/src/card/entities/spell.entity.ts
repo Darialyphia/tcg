@@ -44,15 +44,15 @@ export class Spell extends Card<
       this.blueprint.onPlay(this.game, this, targets);
       this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
     } else {
-      this.game.interaction.startSelectingTargets(
-        this.blueprint.followup.targets,
-        this.blueprint.followup.canCommit,
-        targets => {
+      this.game.interaction.startSelectingTargets({
+        getNextTarget: targets => this.blueprint.followup.targets[targets.length] ?? null,
+        canCommit: this.blueprint.followup.canCommit,
+        onComplete: targets => {
           this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
           this.blueprint.onPlay(this.game, this, targets);
           this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
         }
-      );
+      });
     }
   }
 

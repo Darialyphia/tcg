@@ -94,6 +94,10 @@ export class Player
     return this.cards.deck;
   }
 
+  get discardPile() {
+    return this.cards.discardPile;
+  }
+
   get deckSize() {
     return this.cards.deckSize;
   }
@@ -108,6 +112,10 @@ export class Player
 
   get draw() {
     return this.cards.draw.bind(this.cards);
+  }
+
+  get discard() {
+    return this.cards.discard.bind(this.cards);
   }
 
   get addToHand() {
