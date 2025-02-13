@@ -10,7 +10,7 @@ export class EffectChainSystem extends System<never> {
 
   shutdown() {}
 
-  startChain(player: Player, onResolved: () => void) {
+  createChain(player: Player, onResolved: () => void) {
     this._currentChain = new EffectChain(this.game, player, () => {
       onResolved();
       this._currentChain = null;
@@ -21,14 +21,14 @@ export class EffectChainSystem extends System<never> {
     return this._currentChain;
   }
 
-  start(effect: Effect, player: Player) {
-    assert(this._currentChain, 'No active effect chain');
-    this._currentChain.start(effect, player);
-  }
-
   addEffect(effect: Effect, player: Player) {
     assert(this._currentChain, 'No active effect chain');
     this._currentChain.addEffect(effect, player);
+  }
+
+  start(effect: Effect, player: Player) {
+    assert(this._currentChain, 'No active effect chain');
+    this._currentChain.start(effect, player);
   }
 
   pass(player: Player) {

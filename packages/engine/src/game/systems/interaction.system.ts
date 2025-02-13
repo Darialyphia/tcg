@@ -1,5 +1,6 @@
 import {
   type EmptyObject,
+  type Nullable,
   type Values,
   assert,
   StateMachine,
@@ -9,14 +10,17 @@ import type { CreatureSlot } from './game-board.system';
 import type { AnyCard } from '../../card/entities/card.entity';
 import type { Player } from '../../player/player.entity';
 import { System } from '../../system';
+import type { Evolution } from '../../card/entities/evolution.entity';
+import type { Creature } from '../../card/entities/creature.entity';
+import type { Hero } from '../../card/entities/hero.entity';
+import type { Effect } from '../effect-chain';
 
 export const INTERACTION_STATES = {
   IDLE: 'idle',
   SELECTING_CARD_TARGETS: 'selecting-card-targets',
   SELECTING_CARDS: 'selecting-cards',
   SEARCHING_DECK: 'searching-deck',
-  RESPOND_TO_ATTACK: 'respond-to-attack',
-  BLOCKER_DECLARED: 'blocker-declared'
+  RESPOND_TO_ATTACK: 'respond-to-attack'
 } as const;
 export type InteractionState = Values<typeof INTERACTION_STATES>;
 
@@ -30,7 +34,8 @@ export const INTERACTION_STATE_TRANSITIONS = {
   DECLARE_ATTACK: 'declare-attack',
   DECLARE_BLOCKER: 'declare-blocker',
   START_CHAIN: 'start-chain',
-  SKIP_BLOCKERS: 'skip-blockers'
+  SKIP_ATTACK_RESPONSE: 'skip-attack-response',
+  COMBAT_RESOLVED: 'combat-resolved'
 } as const;
 export type Interactiontransition = Values<typeof INTERACTION_STATE_TRANSITIONS>;
 
@@ -53,11 +58,11 @@ export type SelectedTarget =
 
 export type InteractionStateContext =
   | {
-      state: 'idle';
+      state: typeof INTERACTION_STATES.IDLE;
       ctx: EmptyObject;
     }
   | {
-      state: 'selecting-card-targets';
+      state: typeof INTERACTION_STATES.SELECTING_CARD_TARGETS;
       ctx: {
         canCommit: (targets: SelectedTarget[]) => boolean;
         getNextTarget: (targets: SelectedTarget[]) => EffectTarget | null;
@@ -66,7 +71,7 @@ export type InteractionStateContext =
       };
     }
   | {
-      state: 'selecting-cards';
+      state: typeof INTERACTION_STATES.SELECTING_CARDS;
       ctx: {
         choices: AnyCard[];
         minChoices: number;
@@ -75,12 +80,20 @@ export type InteractionStateContext =
       };
     }
   | {
-      state: 'searching-deck';
+      state: typeof INTERACTION_STATES.SEARCHING_DECK;
       ctx: {
         player: Player;
         minChoices: number;
         maxChoices: number;
         onComplete: (selectedCards: AnyCard[], player: Player) => void;
+      };
+    }
+  | {
+      state: typeof INTERACTION_STATES.RESPOND_TO_ATTACK;
+      ctx: {
+        attacker: Creature | Evolution;
+        target: Creature | Evolution | Hero;
+        blocker: Nullable<Creature | Evolution>;
       };
     };
 
@@ -126,21 +139,21 @@ export class InteractionSystem extends System<never> {
       transition(
         INTERACTION_STATES.RESPOND_TO_ATTACK,
         INTERACTION_STATE_TRANSITIONS.DECLARE_BLOCKER,
-        INTERACTION_STATES.BLOCKER_DECLARED
+        INTERACTION_STATES.RESPOND_TO_ATTACK
       ),
       transition(
         INTERACTION_STATES.RESPOND_TO_ATTACK,
-        INTERACTION_STATE_TRANSITIONS.SKIP_BLOCKERS,
-        INTERACTION_STATES.BLOCKER_DECLARED
+        INTERACTION_STATE_TRANSITIONS.START_CHAIN,
+        INTERACTION_STATES.RESPOND_TO_ATTACK
       ),
       transition(
-        INTERACTION_STATES.BLOCKER_DECLARED,
-        INTERACTION_STATE_TRANSITIONS.START_CHAIN,
+        INTERACTION_STATES.RESPOND_TO_ATTACK,
+        INTERACTION_STATE_TRANSITIONS.COMBAT_RESOLVED,
         INTERACTION_STATES.IDLE
       ),
       transition(
         INTERACTION_STATES.RESPOND_TO_ATTACK,
-        INTERACTION_STATE_TRANSITIONS.START_CHAIN,
+        INTERACTION_STATE_TRANSITIONS.SKIP_ATTACK_RESPONSE,
         INTERACTION_STATES.IDLE
       )
     ]
@@ -338,5 +351,67 @@ export class InteractionSystem extends System<never> {
       state: 'idle',
       ctx: {}
     };
+  }
+
+  declareAttack(attacker: Creature | Evolution, target: Creature | Evolution | Hero) {
+    assert(
+      this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.DECLARE_ATTACK),
+      'Cannot declare attack'
+    );
+
+    this._context = {
+      state: 'respond-to-attack',
+      ctx: { attacker, target, blocker: null }
+    };
+
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.DECLARE_ATTACK);
+  }
+
+  declareBlocker(blocker: Creature | Evolution) {
+    assert(
+      this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.DECLARE_BLOCKER),
+      'Cannot declare blocker'
+    );
+
+    assert(
+      this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK,
+      'Invalid interaction state context'
+    );
+
+    this._context.ctx.blocker = blocker;
+  }
+
+  startChain(effect: Effect, player: Player) {
+    assert(
+      this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.START_CHAIN),
+      'Cannot start chain'
+    );
+
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.START_CHAIN);
+    this.game.effectChainSystem.createChain(player, this.resolveCombat.bind(this));
+    this.game.effectChainSystem.start(effect, player);
+  }
+
+  skipAttackResponse() {
+    assert(
+      this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.SKIP_ATTACK_RESPONSE),
+      'Cannot skip attack response'
+    );
+
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.SKIP_ATTACK_RESPONSE);
+  }
+
+  private resolveCombat() {
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.COMBAT_RESOLVED);
+    assert(
+      this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK,
+      'Invalid interaction state context'
+    );
+    // TODO handle combat
+    this._context = {
+      state: 'idle',
+      ctx: {}
+    };
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.COMBAT_RESOLVED);
   }
 }

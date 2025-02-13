@@ -4,7 +4,7 @@ import { Interceptable } from '../../utils/interceptable';
 import { CardBeforePlayEvent, type SpellEventMap } from '../card.events';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
-import { SPELL_EVENTS, type SpellKind } from '../card.enums';
+import { SPELL_EVENTS, SPELL_KINDS, type SpellKind } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { assert } from '@game/shared';
@@ -40,10 +40,13 @@ export class Spell extends Card<
   }
 
   private doPlay(targets: SelectedTarget[]) {
-    this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
-    this.player.spendMana(this.manaCost);
-    this.blueprint.onPlay(this.game, this, targets);
-    this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
+    this.game.effectChainSystem.createChain(this.player, () => {});
+    this.game.effectChainSystem.start(() => {
+      this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
+      this.player.spendMana(this.manaCost);
+      this.blueprint.onPlay(this.game, this, targets);
+      this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
+    }, this.player);
   }
 
   selectTargets(onComplete: (targets: SelectedTarget[]) => void) {
@@ -64,6 +67,10 @@ export class Spell extends Card<
 
   addToChain() {
     assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
+    assert(
+      this.spellKind === SPELL_KINDS.BURST,
+      'Only instant spells can be added to the chain'
+    );
     const chain = this.game.effectChainSystem.currentChain;
     this.selectTargets(targets => {
       chain.addEffect(() => {
