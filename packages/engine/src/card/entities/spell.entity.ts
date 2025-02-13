@@ -29,6 +29,7 @@ export class Spell extends Card<
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, makeInterceptors(), options);
     this.forwardListeners();
+    this.blueprint.onInit(this.game, this);
   }
 
   get manaCost() {
@@ -69,7 +70,7 @@ export class Spell extends Card<
     assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
     assert(
       this.spellKind === SPELL_KINDS.BURST,
-      'Only instant spells can be added to the chain'
+      'Only Burst spells can be added to the chain'
     );
     const chain = this.game.effectChainSystem.currentChain;
     this.selectTargets(targets => {

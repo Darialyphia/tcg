@@ -28,6 +28,7 @@ import type { CreatureSlot } from '../../game/systems/game-board.system';
 import { assert, isDefined } from '@game/shared';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { Hero } from './hero.entity';
+import { PLAYER_EVENTS } from '../../player/player-enums';
 
 export type SerializedEvolution = SerializedCard & {
   atk: number;
@@ -60,12 +61,22 @@ export class Evolution extends Card<
 > {
   readonly health: HealthComponent;
 
+  private _isExhausted = false;
+
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, makeInterceptors(), options);
     this.health = new HealthComponent({
       initialValue: this.maxHp
     });
     this.forwardListeners();
+    this.player.on(PLAYER_EVENTS.START_TURN, () => {
+      this._isExhausted = false;
+    });
+    this.blueprint.onInit(this.game, this);
+  }
+
+  get isExhausted() {
+    return this._isExhausted;
   }
 
   get atk(): number {
@@ -113,6 +124,18 @@ export class Evolution extends Card<
       damage,
       amount
     });
+  }
+
+  declareAttack(target: Defender) {
+    assert(!this._isExhausted, 'Creature is exhausted');
+    this._isExhausted = true;
+    this.game.interaction.declareAttack(this, target);
+  }
+
+  declareBlocker() {
+    assert(!this._isExhausted, 'Creature is exhausted');
+    this._isExhausted = true;
+    this.game.interaction.declareBlocker(this);
   }
 
   attack(target: Defender, isBlocked: boolean) {
@@ -248,20 +271,49 @@ export class Evolution extends Card<
     ability.onResolve(this.game, this, targets);
   }
 
-  useAbility(index: number, targets?: SelectedTarget[]) {
+  addAbilityToChain(index: number) {
+    assert(!this.isExhausted, 'Creature is exhausted');
+    assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
     const ability = this.blueprint.abilities[index];
     assert(isDefined(ability), 'Ability not found');
-    if (targets) {
-      this.resolveAbility(ability, targets);
-    } else {
-      this.game.interaction.startSelectingTargets({
-        getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
-        canCommit: ability.followup.canCommit,
-        onComplete: targets => {
-          this.resolveAbility(ability, targets);
-        }
+    this.game.effectChainSystem.currentChain.addEffect(() => {
+      this.selectAbilityTargets(ability, targets => {
+        this.resolveAbility(this.blueprint.abilities[index], targets);
       });
-    }
+    }, this.player);
+  }
+
+  selectAbilityTargets(
+    ability: Ability<Evolution>,
+    onComplete: (targets: SelectedTarget[]) => void
+  ) {
+    assert(
+      this.blueprint.abilities.includes(ability),
+      "The ability doesn't belong to this creature"
+    );
+
+    this.game.interaction.startSelectingTargets({
+      getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
+      canCommit: ability.followup.canCommit,
+      onComplete
+    });
+  }
+
+  declareAbility(index: number) {
+    assert(!this.isExhausted, 'Creature is exhausted');
+    assert(
+      !this.game.effectChainSystem.currentChain,
+      'There is already an ongoing chain'
+    );
+    const ability = this.blueprint.abilities[index];
+    assert(isDefined(ability), 'Ability not found');
+
+    this.selectAbilityTargets(ability, targets => {
+      this.game.effectChainSystem.createChain(this.player, () => {});
+      this.game.effectChainSystem.start(() => {
+        this.resolveAbility(this.blueprint.abilities[index], targets);
+      }, this.player);
+    });
   }
 
   forwardListeners() {

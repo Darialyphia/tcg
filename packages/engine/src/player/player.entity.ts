@@ -57,8 +57,6 @@ export class Player
 
   currentlyPlayedCard: Nullable<DeckCard> = null;
 
-  private cardsReplacedThisTurn = 0;
-
   constructor(
     game: Game,
     private options: PlayerOptions
@@ -229,7 +227,6 @@ export class Player
       new PlayerBeforeReplaceCardEvent({ card })
     );
     const replacement = this.cards.replaceCardAt(index);
-    this.cardsReplacedThisTurn++;
     this.emitter.emit(
       PLAYER_EVENTS.AFTER_REPLACE_CARD,
       new PlayerAfterReplaceCardEvent({ card, replacement })

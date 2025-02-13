@@ -7,11 +7,14 @@ export type Config = {
   CARDS_DRAWN_PER_TURN: number;
   // Should the deck be shuffled at the start of the game (this is useeful for testing or tutorials)
   SHUFFLE_DECK_AT_START_OF_GAME: boolean;
+  // The mana cose of the hero draw action
+  HERO_DRAW_ACTION_MANA_COST: number;
 };
 
 export const defaultConfig = {
   INITIAL_HAND_SIZE: 3,
   MAX_HAND_SIZE: 8,
   CARDS_DRAWN_PER_TURN: 1,
-  SHUFFLE_DECK_AT_START_OF_GAME: true
+  SHUFFLE_DECK_AT_START_OF_GAME: true,
+  HERO_DRAW_ACTION_MANA_COST: 1
 } as const;

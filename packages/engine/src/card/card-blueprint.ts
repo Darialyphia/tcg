@@ -44,6 +44,7 @@ export type CreatureBlueprint = CardBlueprintBase & {
   maxHp: number;
   atk: number;
   abilities: Array<Ability<Creature>>;
+  loyalty: number;
   onInit(game: Game, card: Creature): void;
   onPlay(game: Game, card: Creature): void;
 };
@@ -52,15 +53,19 @@ export type SpellBlueprint = CardBlueprintBase & {
   kind: Extract<CardKind, typeof CARD_KINDS.SPELL>;
   manaCost: number;
   spellKind: SpellKind;
+  loyalty: number;
   followup: {
     targets: EffectTarget[];
     canCommit: (targets: SelectedTarget[]) => boolean;
   };
+  onInit(game: Game, card: Spell): void;
   onPlay(game: Game, card: Spell, targets: SelectedTarget[]): void;
 };
 
 export type ShardBlueprint = CardBlueprintBase & {
   kind: Extract<CardKind, typeof CARD_KINDS.SHARD>;
+  loyalty: number;
+  onInit(game: Game, card: Shard): void;
   onPlay(game: Game, card: Shard): void;
 };
 
@@ -71,7 +76,9 @@ export type EvolutionBlueprint = CardBlueprintBase & {
   keywords: Keyword[];
   maxHp: number;
   atk: number;
+  loyalty: number;
   abilities: Array<Ability<Evolution>>;
+  onInit(game: Game, card: Evolution): void;
   onPlay(game: Game, card: Evolution): void;
 };
 

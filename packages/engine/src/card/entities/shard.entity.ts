@@ -24,6 +24,7 @@ export class Shard extends Card<
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, {}, options);
     this.forwardListeners();
+    this.blueprint.onInit(this.game, this);
   }
 
   play() {
