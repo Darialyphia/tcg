@@ -4,8 +4,10 @@ import type { PLAYER_EVENTS } from './player-enums';
 import type { SerializedSpell, Spell } from '../card/entities/spell.entity';
 import type { Creature, SerializedCreature } from '../card/entities/creature.entity';
 import type { SerializedShard, Shard } from '../card/entities/shard.entity';
-import type { Evolution } from '../card/entities/evolution.entity';
+import type { Evolution, SerializedEvolution } from '../card/entities/evolution.entity';
 import type { SerializedCard } from '../card/entities/card.entity';
+import type { DeckCard } from '../card/entities/deck.entity';
+import { replace } from 'lodash-es';
 
 export class PlayerStartTurnEvent extends TypedEvent<EmptyObject, EmptyObject> {
   serialize() {
@@ -32,11 +34,37 @@ export class PlayerManaChangeEvent extends TypedEvent<
 
 export class PlayCardEvent extends TypedEvent<
   { card: Creature | Evolution | Spell | Shard },
-  { card: SerializedCard }
+  { card: SerializedCreature | SerializedSpell | SerializedShard }
 > {
   serialize() {
     return {
       card: this.data.card.serialize()
+    };
+  }
+}
+
+export class PlayerBeforeReplaceCardEvent extends TypedEvent<
+  { card: DeckCard },
+  { card: SerializedCreature | SerializedSpell | SerializedShard }
+> {
+  serialize() {
+    return {
+      card: this.data.card.serialize()
+    };
+  }
+}
+
+export class PlayerAfterReplaceCardEvent extends TypedEvent<
+  { card: DeckCard; replacement: DeckCard },
+  {
+    card: SerializedCreature | SerializedSpell | SerializedShard;
+    replacement: SerializedCreature | SerializedSpell | SerializedShard;
+  }
+> {
+  serialize() {
+    return {
+      card: this.data.card.serialize(),
+      replacement: this.data.replacement.serialize()
     };
   }
 }
@@ -48,4 +76,6 @@ export type PlayerEventMap = {
   [PLAYER_EVENTS.AFTER_MANA_CHANGE]: PlayerManaChangeEvent;
   [PLAYER_EVENTS.BEFORE_PLAY_CARD]: PlayCardEvent;
   [PLAYER_EVENTS.AFTER_PLAY_CARD]: PlayCardEvent;
+  [PLAYER_EVENTS.BEFORE_REPLACE_CARD]: PlayerBeforeReplaceCardEvent;
+  [PLAYER_EVENTS.AFTER_REPLACE_CARD]: PlayerAfterReplaceCardEvent;
 };

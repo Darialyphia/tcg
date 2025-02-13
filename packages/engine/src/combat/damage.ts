@@ -24,20 +24,24 @@ export type DamageOptions<T extends AnyCard> = {
 };
 
 export abstract class Damage<T extends AnyCard = AnyCard> {
-  protected source: T;
+  protected _source: T;
 
   protected _baseAmount: number;
 
   readonly type: DamageType;
 
   constructor(options: DamageOptions<T>) {
-    this.source = options.source;
+    this._source = options.source;
     this._baseAmount = options.baseAmount;
     this.type = options.type;
   }
 
   get baseAmount() {
     return this._baseAmount;
+  }
+
+  get source() {
+    return this._source;
   }
 
   abstract getFinalAmount(target: Defender): number;
@@ -50,9 +54,9 @@ export class CombatDamage extends Damage<Attacker> {
   }
 
   getFinalAmount(target: Defender) {
-    const scaled = this.source.getDealtDamage(target);
+    const scaled = this._source.getDealtDamage(target);
 
-    return target.getReceivedDamage(scaled, this, this.source);
+    return target.getReceivedDamage(scaled, this, this._source);
   }
 }
 
@@ -62,7 +66,7 @@ export class SpellDamage extends Damage<Spell> {
   }
 
   getFinalAmount(target: Defender) {
-    return target.getReceivedDamage(this.baseAmount, this, this.source);
+    return target.getReceivedDamage(this.baseAmount, this, this._source);
   }
 }
 
@@ -72,6 +76,6 @@ export class AbilityDamage extends Damage<AnyCard> {
   }
 
   getFinalAmount(target: Defender) {
-    return target.getReceivedDamage(this.baseAmount, this, this.source);
+    return target.getReceivedDamage(this.baseAmount, this, this._source);
   }
 }

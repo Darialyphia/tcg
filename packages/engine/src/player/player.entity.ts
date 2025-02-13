@@ -1,8 +1,10 @@
 import { Entity } from '../entity';
 import { type Game } from '../game/game';
-import { type EmptyObject, type Nullable, type Serializable } from '@game/shared';
+import { assert, type EmptyObject, type Nullable, type Serializable } from '@game/shared';
 import {
   PlayCardEvent,
+  PlayerAfterReplaceCardEvent,
+  PlayerBeforeReplaceCardEvent,
   PlayerEndTurnEvent,
   PlayerManaChangeEvent,
   PlayerStartTurnEvent,
@@ -54,6 +56,8 @@ export class Player
   _mana = 0;
 
   currentlyPlayedCard: Nullable<DeckCard> = null;
+
+  private cardsReplacedThisTurn = 0;
 
   constructor(
     game: Game,
@@ -214,6 +218,21 @@ export class Player
     this.emitter.emit(
       PLAYER_EVENTS.AFTER_PLAY_CARD,
       new PlayCardEvent({ card: evolution })
+    );
+  }
+
+  replaceCardAtIndex(index: number) {
+    const card = this.getCardAt(index);
+    assert(card, `Card not found at index ${index}`);
+    this.emitter.emit(
+      PLAYER_EVENTS.BEFORE_REPLACE_CARD,
+      new PlayerBeforeReplaceCardEvent({ card })
+    );
+    const replacement = this.cards.replaceCardAt(index);
+    this.cardsReplacedThisTurn++;
+    this.emitter.emit(
+      PLAYER_EVENTS.AFTER_REPLACE_CARD,
+      new PlayerAfterReplaceCardEvent({ card, replacement })
     );
   }
 

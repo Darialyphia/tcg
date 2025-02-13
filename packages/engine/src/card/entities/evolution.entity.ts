@@ -2,10 +2,13 @@ import { Card, type AnyCard, type CardOptions, type SerializedCard } from './car
 import type { Ability, EvolutionBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
 import {
+  AfterDealDamageEvent,
   AttackEvent,
+  BeforeDealDamageEvent,
   BlockEvent,
   CardAfterPlayEvent,
   CardBeforePlayEvent,
+  TakeDamageEvent,
   type EvolutionEventMap
 } from '../card.events';
 import {
@@ -135,17 +138,32 @@ export class Evolution extends Card<
   }
 
   dealDamage(target: Defender) {
+    this.emitter.emit(
+      EVOLUTION_EVENTS.BEFORE_DEAL_DAMAGE,
+      new BeforeDealDamageEvent({ target })
+    );
     const damage = new CombatDamage({
       baseAmount: this.atk,
       source: this
     });
     target.receiveDamage(damage);
+    this.emitter.emit(
+      EVOLUTION_EVENTS.AFTER_DEAL_DAMAGE,
+      new AfterDealDamageEvent({ target, damage })
+    );
   }
 
   receiveDamage(damage: Damage<AnyCard>) {
+    this.emitter.emit(
+      EVOLUTION_EVENTS.BEFORE_TAKE_DAMAGE,
+      new TakeDamageEvent({ damage, source: damage.source, target: this })
+    );
     this.health.remove(damage.getFinalAmount(this));
+    this.emitter.emit(
+      EVOLUTION_EVENTS.AFTER_TAKE_DAMAGE,
+      new TakeDamageEvent({ damage, source: damage.source, target: this })
+    );
   }
-
   private selectTributes(onComplete: (targets: Array<Creature | Evolution>) => void) {
     this.game.interaction.startSelectingTargets<'card'>({
       getNextTarget: targets => {

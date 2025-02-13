@@ -80,13 +80,11 @@ export class TakeDamageEvent extends TypedEvent<
   {
     source: SerializedCard;
     amount: number;
-    target: SerializedCreature | SerializedHero | SerializedEvolution;
   }
 > {
   serialize() {
     return {
       source: this.data.source.serialize(),
-      target: this.data.target.serialize(),
       amount: this.data.damage.getFinalAmount(this.data.target)
     };
   }

@@ -6,7 +6,10 @@ import {
   CardBeforePlayEvent,
   AttackEvent,
   type CreatureEventMap,
-  BlockEvent
+  BlockEvent,
+  BeforeDealDamageEvent,
+  AfterDealDamageEvent,
+  TakeDamageEvent
 } from '../card.events';
 import {
   CombatDamage,
@@ -216,15 +219,31 @@ export class Creature extends Card<
   }
 
   dealDamage(target: Defender) {
+    this.emitter.emit(
+      CREATURE_EVENTS.BEFORE_DEAL_DAMAGE,
+      new BeforeDealDamageEvent({ target })
+    );
     const damage = new CombatDamage({
       baseAmount: this.atk,
       source: this
     });
     target.receiveDamage(damage);
+    this.emitter.emit(
+      CREATURE_EVENTS.AFTER_DEAL_DAMAGE,
+      new AfterDealDamageEvent({ target, damage })
+    );
   }
 
   receiveDamage(damage: Damage<AnyCard>) {
+    this.emitter.emit(
+      CREATURE_EVENTS.BEFORE_TAKE_DAMAGE,
+      new TakeDamageEvent({ damage, source: damage.source, target: this })
+    );
     this.health.remove(damage.getFinalAmount(this));
+    this.emitter.emit(
+      CREATURE_EVENTS.AFTER_TAKE_DAMAGE,
+      new TakeDamageEvent({ damage, source: damage.source, target: this })
+    );
   }
 
   forwardListeners() {
