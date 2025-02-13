@@ -14,7 +14,9 @@ export const INTERACTION_STATES = {
   IDLE: 'idle',
   SELECTING_CARD_TARGETS: 'selecting-card-targets',
   SELECTING_CARDS: 'selecting-cards',
-  SEARCHING_DECK: 'searching-deck'
+  SEARCHING_DECK: 'searching-deck',
+  RESPOND_TO_ATTACK: 'respond-to-attack',
+  BLOCKER_DECLARED: 'blocker-declared'
 } as const;
 export type InteractionState = Values<typeof INTERACTION_STATES>;
 
@@ -24,7 +26,11 @@ export const INTERACTION_STATE_TRANSITIONS = {
   START_SELECTING_CARD: 'start-selecting-card',
   COMMIT_CARD_SELECTION: 'commit-card-selection',
   START_SEARCHING_DECK: 'start-searching-deck',
-  COMMIT_SEARCHING_DECK: 'commit-searching-deck'
+  COMMIT_SEARCHING_DECK: 'commit-searching-deck',
+  DECLARE_ATTACK: 'declare-attack',
+  DECLARE_BLOCKER: 'declare-blocker',
+  START_CHAIN: 'start-chain',
+  SKIP_BLOCKERS: 'skip-blockers'
 } as const;
 export type Interactiontransition = Values<typeof INTERACTION_STATE_TRANSITIONS>;
 
@@ -110,6 +116,31 @@ export class InteractionSystem extends System<never> {
       transition(
         INTERACTION_STATES.SEARCHING_DECK,
         INTERACTION_STATE_TRANSITIONS.COMMIT_SEARCHING_DECK,
+        INTERACTION_STATES.IDLE
+      ),
+      transition(
+        INTERACTION_STATES.IDLE,
+        INTERACTION_STATE_TRANSITIONS.DECLARE_ATTACK,
+        INTERACTION_STATES.RESPOND_TO_ATTACK
+      ),
+      transition(
+        INTERACTION_STATES.RESPOND_TO_ATTACK,
+        INTERACTION_STATE_TRANSITIONS.DECLARE_BLOCKER,
+        INTERACTION_STATES.BLOCKER_DECLARED
+      ),
+      transition(
+        INTERACTION_STATES.RESPOND_TO_ATTACK,
+        INTERACTION_STATE_TRANSITIONS.SKIP_BLOCKERS,
+        INTERACTION_STATES.BLOCKER_DECLARED
+      ),
+      transition(
+        INTERACTION_STATES.BLOCKER_DECLARED,
+        INTERACTION_STATE_TRANSITIONS.START_CHAIN,
+        INTERACTION_STATES.IDLE
+      ),
+      transition(
+        INTERACTION_STATES.RESPOND_TO_ATTACK,
+        INTERACTION_STATE_TRANSITIONS.START_CHAIN,
         INTERACTION_STATES.IDLE
       )
     ]
