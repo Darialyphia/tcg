@@ -4,9 +4,16 @@ import { Interceptable } from '../../utils/interceptable';
 import {
   CardAfterPlayEvent,
   CardBeforePlayEvent,
-  type CreatureEventMap
+  AttackEvent,
+  type CreatureEventMap,
+  BlockEvent
 } from '../card.events';
-import type { Attacker, Damage, Defender } from '../../combat/damage';
+import {
+  CombatDamage,
+  type Attacker,
+  type Damage,
+  type Defender
+} from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import { HealthComponent } from '../../combat/health.component';
@@ -15,6 +22,7 @@ import { GameCardEvent } from '../../game/game.events';
 import type { CreatureSlot } from '../../game/systems/game-board.system';
 import { assert, isDefined, type Nullable } from '@game/shared';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
+import { Hero } from './hero.entity';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -126,19 +134,19 @@ export class Creature extends Card<
         onComplete: targets => {
           const target = targets[0];
           assert(target.type === 'creatureSlot', 'Expected target to be a creature slot');
-          this.emitter.emit(CREATURE_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
           this.playAt(target.zone, target.slot);
-          this.emitter.emit(CREATURE_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
         }
       });
     }
   }
 
   playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {
+    this.emitter.emit(CREATURE_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
     this.player.spendMana(this.manaCost);
 
     this.player.boardSide.summonCreature(this, zone, slot);
     this.blueprint.onPlay(this.game, this);
+    this.emitter.emit(CREATURE_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
   }
 
   private resolveAbility(ability: Ability<Creature>, targets: SelectedTarget[]) {
@@ -183,6 +191,40 @@ export class Creature extends Card<
         this.resolveAbility(this.blueprint.abilities[index], targets);
       });
     }, this.player);
+  }
+
+  attack(target: Defender, isBlocked: boolean) {
+    if (this.isDead) return;
+    if (target.isDead) return;
+
+    this.emitter.emit(CREATURE_EVENTS.BEFORE_ATTACK, new AttackEvent({ target }));
+    if (isBlocked) {
+      assert(!(target instanceof Hero), 'Hero cannot block');
+      target.block(this, () => {
+        this.dealDamage(target);
+      });
+    } else {
+      this.dealDamage(target);
+    }
+    this.emitter.emit(CREATURE_EVENTS.AFTER_ATTACK, new AttackEvent({ target }));
+  }
+
+  block(attacker: Attacker, cb: () => void) {
+    this.emitter.emit(CREATURE_EVENTS.BEFORE_BLOCK, new BlockEvent({ attacker }));
+    cb();
+    this.emitter.emit(CREATURE_EVENTS.AFTER_BLOCK, new BlockEvent({ attacker }));
+  }
+
+  dealDamage(target: Defender) {
+    const damage = new CombatDamage({
+      baseAmount: this.atk,
+      source: this
+    });
+    target.receiveDamage(damage);
+  }
+
+  receiveDamage(damage: Damage<AnyCard>) {
+    this.health.remove(damage.getFinalAmount(this));
   }
 
   forwardListeners() {

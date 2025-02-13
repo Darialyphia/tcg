@@ -46,6 +46,10 @@ export class Hero extends Card<
     return this.interceptors.maxHp.getValue(this.blueprint.maxHp, {});
   }
 
+  get isDead() {
+    return this.health.isDead;
+  }
+
   getReceivedDamage<T extends AnyCard>(amount: number, damage: Damage<T>, from: AnyCard) {
     return this.interceptors.damageReceived.getValue(amount, {
       source: from,
@@ -73,6 +77,10 @@ export class Hero extends Card<
         }
       });
     }
+  }
+
+  receiveDamage(damage: Damage<AnyCard>) {
+    this.health.remove(damage.getFinalAmount(this));
   }
 
   play() {}

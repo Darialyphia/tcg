@@ -14,6 +14,7 @@ import type { Evolution } from '../../card/entities/evolution.entity';
 import type { Creature } from '../../card/entities/creature.entity';
 import type { Hero } from '../../card/entities/hero.entity';
 import type { Effect } from '../effect-chain';
+import type { Attacker, Blocker, Defender } from '../../combat/damage';
 
 export const INTERACTION_STATES = {
   IDLE: 'idle',
@@ -91,9 +92,9 @@ export type InteractionStateContext =
   | {
       state: typeof INTERACTION_STATES.RESPOND_TO_ATTACK;
       ctx: {
-        attacker: Creature | Evolution;
-        target: Creature | Evolution | Hero;
-        blocker: Nullable<Creature | Evolution>;
+        attacker: Attacker;
+        target: Defender;
+        blocker: Nullable<Blocker>;
       };
     };
 
@@ -163,6 +164,10 @@ export class InteractionSystem extends System<never> {
     state: 'idle',
     ctx: {}
   };
+
+  private assertStateCtx(state: InteractionStateContext['state']) {
+    assert(this._context.state === state, 'Invalid interaction state context');
+  }
 
   initialize(): void {}
 
@@ -353,7 +358,7 @@ export class InteractionSystem extends System<never> {
     };
   }
 
-  declareAttack(attacker: Creature | Evolution, target: Creature | Evolution | Hero) {
+  declareAttack(attacker: Attacker, target: Defender) {
     assert(
       this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.DECLARE_ATTACK),
       'Cannot declare attack'
@@ -367,7 +372,7 @@ export class InteractionSystem extends System<never> {
     this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.DECLARE_ATTACK);
   }
 
-  declareBlocker(blocker: Creature | Evolution) {
+  declareBlocker(blocker: Blocker) {
     assert(
       this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.DECLARE_BLOCKER),
       'Cannot declare blocker'
@@ -376,6 +381,16 @@ export class InteractionSystem extends System<never> {
     assert(
       this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK,
       'Invalid interaction state context'
+    );
+
+    assert(
+      !this.game.effectChainSystem.currentChain,
+      'Cannot declare blocker after a chain has been started'
+    );
+
+    assert(
+      !blocker.player.equals(this._context.ctx.target.player),
+      'Attacking player cannot declare blocker'
     );
 
     this._context.ctx.blocker = blocker;
@@ -387,17 +402,36 @@ export class InteractionSystem extends System<never> {
       'Cannot start chain'
     );
 
+    assert(
+      this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK,
+      'Invalid interaction state context'
+    );
+
+    assert(
+      !player.equals(this._context.ctx.target.player),
+      'Attacking player cannot declare blocker'
+    );
+
     this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.START_CHAIN);
     this.game.effectChainSystem.createChain(player, this.resolveCombat.bind(this));
     this.game.effectChainSystem.start(effect, player);
   }
 
-  skipAttackResponse() {
+  skipAttackResponse(player: Player) {
     assert(
       this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.SKIP_ATTACK_RESPONSE),
       'Cannot skip attack response'
     );
 
+    assert(
+      this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK,
+      'Invalid interaction state context'
+    );
+
+    assert(
+      !player.equals(this._context.ctx.target.player),
+      'Attacking player cannot skip response'
+    );
     this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.SKIP_ATTACK_RESPONSE);
   }
 
@@ -407,7 +441,15 @@ export class InteractionSystem extends System<never> {
       this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK,
       'Invalid interaction state context'
     );
-    // TODO handle combat
+
+    const { attacker, target, blocker } = this._context.ctx;
+
+    if (blocker) {
+      attacker.attack(blocker, true);
+    } else {
+      attacker.attack(target, false);
+    }
+
     this._context = {
       state: 'idle',
       ctx: {}

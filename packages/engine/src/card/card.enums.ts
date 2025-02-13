@@ -24,7 +24,7 @@ export const CREATURE_EVENTS = {
 } as const;
 export type CreatureCardEvent = Values<typeof CREATURE_EVENTS>;
 
-export const EVOLUTION_EVENTS = { ...CARD_EVENTS } as const;
+export const EVOLUTION_EVENTS = { ...CREATURE_EVENTS } as const;
 export type EvolutionCardEvent = Values<typeof EVOLUTION_EVENTS>;
 
 export const SPELL_EVENTS = { ...CARD_EVENTS } as const;

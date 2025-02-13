@@ -15,6 +15,7 @@ export type DamageType = Values<typeof DAMAGE_TYPES>;
 
 export type Attacker = Creature | Evolution;
 export type Defender = Creature | Evolution | Hero;
+export type Blocker = Creature | Evolution;
 
 export type DamageOptions<T extends AnyCard> = {
   source: T;

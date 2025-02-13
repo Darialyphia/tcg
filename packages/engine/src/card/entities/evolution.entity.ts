@@ -2,11 +2,18 @@ import { Card, type AnyCard, type CardOptions, type SerializedCard } from './car
 import type { Ability, EvolutionBlueprint } from '../card-blueprint';
 import { Interceptable } from '../../utils/interceptable';
 import {
+  AttackEvent,
+  BlockEvent,
   CardAfterPlayEvent,
   CardBeforePlayEvent,
   type EvolutionEventMap
 } from '../card.events';
-import type { Defender, Attacker, Damage } from '../../combat/damage';
+import {
+  type Defender,
+  type Attacker,
+  type Damage,
+  CombatDamage
+} from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import { HealthComponent } from '../../combat/health.component';
@@ -17,6 +24,7 @@ import type { DeckCard } from './deck.entity';
 import type { CreatureSlot } from '../../game/systems/game-board.system';
 import { assert, isDefined } from '@game/shared';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
+import { Hero } from './hero.entity';
 
 export type SerializedEvolution = SerializedCard & {
   atk: number;
@@ -86,6 +94,10 @@ export class Evolution extends Card<
     return this.player.boardSide.getAdjacentCreatures(zone, slot);
   }
 
+  get isDead() {
+    return this.health.isDead;
+  }
+
   getDealtDamage(target: Defender) {
     return this.interceptors.damageDealt.getValue(this.atk, {
       target
@@ -98,6 +110,40 @@ export class Evolution extends Card<
       damage,
       amount
     });
+  }
+
+  attack(target: Defender, isBlocked: boolean) {
+    if (this.isDead) return;
+    if (target.isDead) return;
+
+    this.emitter.emit(EVOLUTION_EVENTS.BEFORE_ATTACK, new AttackEvent({ target }));
+    if (isBlocked) {
+      assert(!(target instanceof Hero), 'Hero cannot block');
+      target.block(this, () => {
+        this.dealDamage(target);
+      });
+    } else {
+      this.dealDamage(target);
+    }
+    this.emitter.emit(EVOLUTION_EVENTS.AFTER_ATTACK, new AttackEvent({ target }));
+  }
+
+  block(attacker: Attacker, cb: () => void) {
+    this.emitter.emit(EVOLUTION_EVENTS.BEFORE_BLOCK, new BlockEvent({ attacker }));
+    cb();
+    this.emitter.emit(EVOLUTION_EVENTS.AFTER_BLOCK, new BlockEvent({ attacker }));
+  }
+
+  dealDamage(target: Defender) {
+    const damage = new CombatDamage({
+      baseAmount: this.atk,
+      source: this
+    });
+    target.receiveDamage(damage);
+  }
+
+  receiveDamage(damage: Damage<AnyCard>) {
+    this.health.remove(damage.getFinalAmount(this));
   }
 
   private selectTributes(onComplete: (targets: Array<Creature | Evolution>) => void) {

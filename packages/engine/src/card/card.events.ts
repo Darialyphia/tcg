@@ -5,7 +5,7 @@ import type { Creature, SerializedCreature } from './entities/creature.entity';
 import type { Hero, SerializedHero } from './entities/hero.entity';
 import type { AnyCard, SerializedCard } from './entities/card.entity';
 import type { SerializedEvolution } from './entities/evolution.entity';
-import type { Damage, Defender } from '../combat/damage';
+import type { Attacker, Damage, Defender } from '../combat/damage';
 
 export class CardBeforePlayEvent extends TypedEvent<EmptyObject, EmptyObject> {
   serialize() {
@@ -19,9 +19,9 @@ export class CardAfterPlayEvent extends TypedEvent<EmptyObject, EmptyObject> {
   }
 }
 
-export class CreatureAttackEvent extends TypedEvent<
-  { target: Creature | Hero },
-  { target: SerializedCreature | SerializedHero }
+export class AttackEvent extends TypedEvent<
+  { target: Defender },
+  { target: SerializedCreature | SerializedEvolution | SerializedHero }
 > {
   serialize() {
     return {
@@ -30,8 +30,8 @@ export class CreatureAttackEvent extends TypedEvent<
   }
 }
 
-export class CreatureBlockEvent extends TypedEvent<
-  { attacker: Creature },
+export class BlockEvent extends TypedEvent<
+  { attacker: Attacker },
   { attacker: SerializedCreature }
 > {
   serialize() {
@@ -41,7 +41,7 @@ export class CreatureBlockEvent extends TypedEvent<
   }
 }
 
-export class CreatureDestroyedEvent extends TypedEvent<
+export class DestroyedEvent extends TypedEvent<
   { source: AnyCard },
   { source: SerializedCard }
 > {
@@ -52,7 +52,7 @@ export class CreatureDestroyedEvent extends TypedEvent<
   }
 }
 
-export class CreatureBeforeDealDamageEvent extends TypedEvent<
+export class BeforeDealDamageEvent extends TypedEvent<
   { target: Defender },
   { target: SerializedCreature | SerializedHero | SerializedEvolution }
 > {
@@ -63,7 +63,7 @@ export class CreatureBeforeDealDamageEvent extends TypedEvent<
   }
 }
 
-export class CreatureAfterDealDamageEvent extends TypedEvent<
+export class AfterDealDamageEvent extends TypedEvent<
   { target: Defender; damage: Damage },
   { target: SerializedCreature | SerializedHero | SerializedEvolution; amount: number }
 > {
@@ -75,7 +75,7 @@ export class CreatureAfterDealDamageEvent extends TypedEvent<
   }
 }
 
-export class CreatureTakeDamageEvent extends TypedEvent<
+export class TakeDamageEvent extends TypedEvent<
   { source: AnyCard; target: Defender; damage: Damage },
   {
     source: SerializedCard;
@@ -98,19 +98,30 @@ export type CardEventMap = {
 };
 
 export type CreatureEventMap = CardEventMap & {
-  [CREATURE_EVENTS.BEFORE_ATTACK]: CreatureAttackEvent;
-  [CREATURE_EVENTS.AFTER_ATTACK]: CreatureAttackEvent;
-  [CREATURE_EVENTS.BEFORE_BLOCK]: CreatureBlockEvent;
-  [CREATURE_EVENTS.AFTER_BLOCK]: CreatureBlockEvent;
-  [CREATURE_EVENTS.BEFORE_DESTROYED]: CreatureDestroyedEvent;
-  [CREATURE_EVENTS.AFTER_DESTROYED]: CreatureDestroyedEvent;
-  [CREATURE_EVENTS.BEFORE_DEAL_DAMAGE]: CreatureBeforeDealDamageEvent;
-  [CREATURE_EVENTS.AFTER_DEAL_DAMAGE]: CreatureAfterDealDamageEvent;
-  [CREATURE_EVENTS.BEFORE_TAKE_DAMAGE]: CreatureTakeDamageEvent;
-  [CREATURE_EVENTS.AFTER_TAKE_DAMAGE]: CreatureTakeDamageEvent;
+  [CREATURE_EVENTS.BEFORE_ATTACK]: AttackEvent;
+  [CREATURE_EVENTS.AFTER_ATTACK]: AttackEvent;
+  [CREATURE_EVENTS.BEFORE_BLOCK]: BlockEvent;
+  [CREATURE_EVENTS.AFTER_BLOCK]: BlockEvent;
+  [CREATURE_EVENTS.BEFORE_DESTROYED]: DestroyedEvent;
+  [CREATURE_EVENTS.AFTER_DESTROYED]: DestroyedEvent;
+  [CREATURE_EVENTS.BEFORE_DEAL_DAMAGE]: BeforeDealDamageEvent;
+  [CREATURE_EVENTS.AFTER_DEAL_DAMAGE]: AfterDealDamageEvent;
+  [CREATURE_EVENTS.BEFORE_TAKE_DAMAGE]: TakeDamageEvent;
+  [CREATURE_EVENTS.AFTER_TAKE_DAMAGE]: TakeDamageEvent;
 };
 
 export type SpellEventMap = CardEventMap;
 export type ShardEventMap = CardEventMap;
-export type EvolutionEventMap = CardEventMap;
+export type EvolutionEventMap = CardEventMap & {
+  [CREATURE_EVENTS.BEFORE_ATTACK]: AttackEvent;
+  [CREATURE_EVENTS.AFTER_ATTACK]: AttackEvent;
+  [CREATURE_EVENTS.BEFORE_BLOCK]: BlockEvent;
+  [CREATURE_EVENTS.AFTER_BLOCK]: BlockEvent;
+  [CREATURE_EVENTS.BEFORE_DESTROYED]: DestroyedEvent;
+  [CREATURE_EVENTS.AFTER_DESTROYED]: DestroyedEvent;
+  [CREATURE_EVENTS.BEFORE_DEAL_DAMAGE]: BeforeDealDamageEvent;
+  [CREATURE_EVENTS.AFTER_DEAL_DAMAGE]: AfterDealDamageEvent;
+  [CREATURE_EVENTS.BEFORE_TAKE_DAMAGE]: TakeDamageEvent;
+  [CREATURE_EVENTS.AFTER_TAKE_DAMAGE]: TakeDamageEvent;
+};
 export type HeroEventMap = CardEventMap;
