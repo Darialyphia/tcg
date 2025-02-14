@@ -20,6 +20,7 @@ import type { Evolution, SerializedEvolution } from '../card/entities/evolution.
 import type { Hero, SerializedHero } from '../card/entities/hero.entity';
 import type { SerializedSpell, Spell } from '../card/entities/spell.entity';
 import type { SerializedShard, Shard } from '../card/entities/shard.entity';
+import type { E } from 'vitest/dist/chunks/environment.LoooBwUu';
 
 type GameCardEventMap<TCard extends AnyCard> = TCard extends Creature
   ? CreatureEventMap
@@ -113,6 +114,12 @@ export class GameReadyEvent extends TypedEvent<EmptyObject, EmptyObject> {
   }
 }
 
+export class GamePhaseChangeEvent extends TypedEvent<EmptyObject, EmptyObject> {
+  serialize() {
+    return {};
+  }
+}
+
 export class GameStarEvent<
   T extends Exclude<GameEventName, '*'> = Exclude<GameEventName, '*'>
 > extends TypedEvent<{ e: StarEvent<T> }, SerializedStarEvent> {
@@ -137,6 +144,8 @@ type GameEventsBase = {
   'game.input-queue-flushed': GameInputQueueFlushedEvent;
   'game.error': GameErrorEvent;
   'game.ready': GameReadyEvent;
+  'game.start-battle': GamePhaseChangeEvent;
+  'game.end-battle': GamePhaseChangeEvent;
   '*': GameStarEvent;
 };
 
@@ -227,5 +236,7 @@ export const GAME_EVENTS = {
   INPUT_START: 'game.input-start',
   TURN_START: TURN_EVENTS.TURN_START,
   TURN_END: TURN_EVENTS.TURN_END,
+  START_BATTLE: 'game.start-battle',
+  END_BATTLE: 'game.end-battle',
   ...makeGlobalEvents(PLAYER_EVENTS, 'player')
 } as const satisfies Record<string, keyof GameEventMap>;

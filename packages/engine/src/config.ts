@@ -12,8 +12,8 @@ export type Config = {
 };
 
 export const defaultConfig = {
-  INITIAL_HAND_SIZE: 3,
-  MAX_HAND_SIZE: 8,
+  INITIAL_HAND_SIZE: 6,
+  MAX_HAND_SIZE: 10,
   CARDS_DRAWN_PER_TURN: 1,
   SHUFFLE_DECK_AT_START_OF_GAME: true,
   HERO_DRAW_ACTION_MANA_COST: 1

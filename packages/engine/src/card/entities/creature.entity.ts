@@ -39,6 +39,8 @@ const makeInterceptors = () => ({
   canAttack: new Interceptable<boolean, { target: Defender }>(),
   canBlock: new Interceptable<boolean, { attacker: Attacker }>(),
   canBeAttackTarget: new Interceptable<boolean, { attacker: Attacker }>(),
+  canBeBlocked: new Interceptable<boolean, { defender: Defender }>(),
+  canUseAbility: new Interceptable<boolean>(),
 
   manaCost: new Interceptable<number>(),
   maxHp: new Interceptable<number>(),
@@ -215,6 +217,26 @@ export class Creature extends Card<
         this.resolveAbility(this.blueprint.abilities[index], targets);
       }, this.player);
     });
+  }
+
+  canAttack(target: Defender) {
+    return this.interceptors.canAttack.getValue(this._isExhausted, { target });
+  }
+
+  canBlock(attacker: Attacker) {
+    return this.interceptors.canBlock.getValue(this._isExhausted, { attacker });
+  }
+
+  canBeAttackTarget(attacker: Attacker) {
+    return this.interceptors.canBeAttackTarget.getValue(true, { attacker });
+  }
+
+  canBeBlocked(defender: Defender) {
+    return this.interceptors.canBeBlocked.getValue(true, { defender });
+  }
+
+  canUseAbility() {
+    return this.interceptors.canUseAbility.getValue(this._isExhausted, {});
   }
 
   declareAttack(target: Defender) {

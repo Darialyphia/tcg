@@ -69,6 +69,17 @@ export class PlayerAfterReplaceCardEvent extends TypedEvent<
   }
 }
 
+export class PlayerMulliganEvent extends TypedEvent<
+  { indices: number[] },
+  { indices: number[] }
+> {
+  serialize() {
+    return {
+      indices: this.data.indices
+    };
+  }
+}
+
 export type PlayerEventMap = {
   [PLAYER_EVENTS.START_TURN]: PlayerStartTurnEvent;
   [PLAYER_EVENTS.END_TURN]: PlayerEndTurnEvent;
@@ -78,4 +89,5 @@ export type PlayerEventMap = {
   [PLAYER_EVENTS.AFTER_PLAY_CARD]: PlayCardEvent;
   [PLAYER_EVENTS.BEFORE_REPLACE_CARD]: PlayerBeforeReplaceCardEvent;
   [PLAYER_EVENTS.AFTER_REPLACE_CARD]: PlayerAfterReplaceCardEvent;
+  [PLAYER_EVENTS.MULLIGAN]: PlayerMulliganEvent;
 };

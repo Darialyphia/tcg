@@ -41,13 +41,10 @@ export class Spell extends Card<
   }
 
   private doPlay(targets: SelectedTarget[]) {
-    this.game.effectChainSystem.createChain(this.player, () => {});
-    this.game.effectChainSystem.start(() => {
-      this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
-      this.player.spendMana(this.manaCost);
-      this.blueprint.onPlay(this.game, this, targets);
-      this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
-    }, this.player);
+    this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
+    this.player.spendMana(this.manaCost);
+    this.blueprint.onPlay(this.game, this, targets);
+    this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
   }
 
   selectTargets(onComplete: (targets: SelectedTarget[]) => void) {
@@ -58,12 +55,13 @@ export class Spell extends Card<
     });
   }
 
-  play(targets?: SelectedTarget[]) {
-    if (targets) {
-      this.doPlay(targets);
-    } else {
-      this.selectTargets(this.doPlay.bind(this));
-    }
+  play() {
+    this.selectTargets(targets => {
+      this.game.effectChainSystem.createChain(this.player, () => {});
+      this.game.effectChainSystem.start(() => {
+        this.doPlay(targets);
+      }, this.player);
+    });
   }
 
   addToChain() {
@@ -75,7 +73,7 @@ export class Spell extends Card<
     const chain = this.game.effectChainSystem.currentChain;
     this.selectTargets(targets => {
       chain.addEffect(() => {
-        this.play(targets);
+        this.doPlay(targets);
       }, this.player);
     });
   }

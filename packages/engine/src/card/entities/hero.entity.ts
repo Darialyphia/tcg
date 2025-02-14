@@ -49,6 +49,10 @@ export class Hero extends Card<
     });
   }
 
+  canBeAttackTarget(attacker: Attacker) {
+    return this.interceptors.canBeAttackTarget.getValue(true, { attacker });
+  }
+
   get maxHp(): number {
     return this.interceptors.maxHp.getValue(this.blueprint.maxHp, {});
   }
@@ -103,6 +107,21 @@ export class Hero extends Card<
     this.selectAbilityTargets(ability, targets => {
       this.game.effectChainSystem.createChain(this.player, () => {});
       this.game.effectChainSystem.start(() => {
+        this.resolveAbility(this.blueprint.abilities[index], targets);
+      }, this.player);
+    });
+  }
+
+  addAbilityToChain(index: number) {
+    assert(!this.isExhausted, 'Creature is exhausted');
+    assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
+    const ability = this.blueprint.abilities[index];
+    assert(isDefined(ability), 'Ability not found');
+
+    const chain = this.game.effectChainSystem.currentChain;
+
+    this.selectAbilityTargets(ability, targets => {
+      chain.addEffect(() => {
         this.resolveAbility(this.blueprint.abilities[index], targets);
       }, this.player);
     });

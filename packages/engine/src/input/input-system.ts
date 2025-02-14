@@ -9,6 +9,18 @@ import {
   GameInputQueueFlushedEvent,
   GameInputStartEvent
 } from '../game/game.events';
+import { MulliganInput } from './inputs/mulligan.input';
+import { PlayCardInput } from './inputs/play-card.input';
+import { AddCardTargetInput } from './inputs/add-card-target.input';
+import { CommitCardSelectionCardInput } from './inputs/commit-card-selection.input';
+import { CommitSearchingDeckCardInput } from './inputs/commit-searching-deck.input';
+import { HeroActionReplaceCardInput } from './inputs/hero-action-replace-card.input';
+import { HeroActionDrawCardInput } from './inputs/hero-action-draw-card.input';
+import { HeroActionUseAbilityCardInput } from './inputs/hero-action-use-ability';
+import { DeclareAttackInput } from './inputs/declare-attack.input';
+import { DeclareBlockerInput } from './inputs/declare-blocker.input';
+import { UseCreatureAbilityInput } from './inputs/use-creature-ability.input';
+import { EndTurnInput } from './inputs/end-turn.input';
 
 type GenericInputMap = Record<string, Constructor<Input<DefaultSchema>>>;
 
@@ -22,7 +34,20 @@ type ValidatedInputMap<T extends GenericInputMap> = {
 
 const validateinputMap = <T extends GenericInputMap>(data: ValidatedInputMap<T>) => data;
 
-const inputMap = validateinputMap({});
+const inputMap = validateinputMap({
+  mulligan: MulliganInput,
+  playCard: PlayCardInput,
+  addCardTarget: AddCardTargetInput,
+  commitCardSelection: CommitCardSelectionCardInput,
+  commitSearchingDeck: CommitSearchingDeckCardInput,
+  heroActionReplaceCard: HeroActionReplaceCardInput,
+  heroActionDrawCard: HeroActionDrawCardInput,
+  heroActionUseAbility: HeroActionUseAbilityCardInput,
+  declareAttack: DeclareAttackInput,
+  declareBlocker: DeclareBlockerInput,
+  useCreatureAbility: UseCreatureAbilityInput,
+  endTurn: EndTurnInput
+});
 
 type InputMap = typeof inputMap;
 

@@ -7,6 +7,7 @@ import {
   PlayerBeforeReplaceCardEvent,
   PlayerEndTurnEvent,
   PlayerManaChangeEvent,
+  PlayerMulliganEvent,
   PlayerStartTurnEvent,
   type PlayerEventMap
 } from './player.events';
@@ -25,6 +26,7 @@ import type {
 import { CardManagerComponent } from '../card/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
 import type { Evolution } from '../card/entities/evolution.entity';
+import { Spell } from '../card/entities/spell.entity';
 
 export type PlayerOptions = {
   id: string;
@@ -52,6 +54,10 @@ export class Player
   readonly hero: Hero;
 
   readonly evolutions: Evolution[];
+
+  private mulliganIndices: number[] = [];
+
+  private _hasMulliganed = false;
 
   _mana = 0;
 
@@ -175,6 +181,22 @@ export class Player
     return this.mana >= amount;
   }
 
+  get hasMulliganed() {
+    return this._hasMulliganed;
+  }
+
+  commitMulliganIndices(indices: number[]) {
+    this.mulliganIndices = indices;
+    this._hasMulliganed = true;
+    this.emitter.emit(PLAYER_EVENTS.MULLIGAN, new PlayerMulliganEvent({ indices }));
+  }
+
+  mulligan() {
+    for (const index of this.mulliganIndices) {
+      this.cards.replaceCardAt(index);
+    }
+  }
+
   get attackZoneCreatures() {
     return this.boardSide.getCreatures('attack');
   }
@@ -193,7 +215,11 @@ export class Player
   playCard(card: DeckCard) {
     this.emitter.emit(PLAYER_EVENTS.BEFORE_PLAY_CARD, new PlayCardEvent({ card }));
     this.currentlyPlayedCard = card;
-    this.cards.play(card);
+    if (card instanceof Spell && this.game.effectChainSystem.currentChain) {
+      card.addToChain();
+    } else {
+      this.cards.play(card);
+    }
     this.currentlyPlayedCard = null;
     this.emitter.emit(PLAYER_EVENTS.AFTER_PLAY_CARD, new PlayCardEvent({ card }));
   }

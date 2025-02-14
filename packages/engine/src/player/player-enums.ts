@@ -10,8 +10,8 @@ export const PLAYER_EVENTS = {
   BEFORE_PLAY_CARD: 'before_play_card',
   AFTER_PLAY_CARD: 'after_play_card',
   BEFORE_REPLACE_CARD: 'before_replace_card',
-  AFTER_REPLACE_CARD: 'after_replace_card'
-  // MULLIGAN: 'mulligan'
+  AFTER_REPLACE_CARD: 'after_replace_card',
+  MULLIGAN: 'mulligan'
 } as const;
 
 export type PlayerEvent = Values<typeof PLAYER_EVENTS>;

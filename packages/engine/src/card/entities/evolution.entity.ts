@@ -40,6 +40,8 @@ const makeInterceptors = () => ({
   canAttack: new Interceptable<boolean, { target: Defender }>(),
   canBlock: new Interceptable<boolean, { attacker: Attacker }>(),
   canBeAttackTarget: new Interceptable<boolean, { attacker: Attacker }>(),
+  canBeBlocked: new Interceptable<boolean, { defender: Defender }>(),
+  canUseAbility: new Interceptable<boolean>(),
 
   manaCost: new Interceptable<number>(),
   maxHp: new Interceptable<number>(),
@@ -230,6 +232,26 @@ export class Evolution extends Card<
         onComplete(tributeTargets.map(target => target.card as Creature | Evolution));
       }
     });
+  }
+
+  canAttack(target: Defender) {
+    return this.interceptors.canAttack.getValue(this._isExhausted, { target });
+  }
+
+  canBlock(attacker: Attacker) {
+    return this.interceptors.canBlock.getValue(this._isExhausted, { attacker });
+  }
+
+  canBeAttackTarget(attacker: Attacker) {
+    return this.interceptors.canBeAttackTarget.getValue(true, { attacker });
+  }
+
+  canBeBlocked(defender: Defender) {
+    return this.interceptors.canBeBlocked.getValue(true, { defender });
+  }
+
+  canUseAbility() {
+    return this.interceptors.canUseAbility.getValue(this._isExhausted, {});
   }
 
   play() {
