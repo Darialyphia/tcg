@@ -21,7 +21,7 @@ export class UseCreatureAbilityInput extends Input<typeof schema> {
   }
 
   get isActive() {
-    return this.game.turnSystem.activePlayer.equals(this.player) || this.hasChain;
+    return this.game.turnSystem.activePlayer.equals(this.player);
   }
 
   get card() {

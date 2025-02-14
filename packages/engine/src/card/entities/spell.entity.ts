@@ -6,7 +6,10 @@ import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
 import { SPELL_EVENTS, SPELL_KINDS, type SpellKind } from '../card.enums';
 import { GameCardEvent } from '../../game/game.events';
-import type { SelectedTarget } from '../../game/systems/interaction.system';
+import {
+  INTERACTION_STATES,
+  type SelectedTarget
+} from '../../game/systems/interaction.system';
 import { assert } from '@game/shared';
 
 export type SerializedSpell = SerializedCard & {
@@ -57,25 +60,33 @@ export class Spell extends Card<
 
   play() {
     this.selectTargets(targets => {
-      this.game.effectChainSystem.createChain(this.player, () => {});
-      this.game.effectChainSystem.start(() => {
-        this.doPlay(targets);
-      }, this.player);
+      if (this.game.effectChainSystem.currentChain) {
+        this.addToChain();
+      } else if (
+        this.game.interaction.context.state === INTERACTION_STATES.RESPOND_TO_ATTACK
+      ) {
+        this.game.interaction.startChain(() => {
+          this.doPlay(targets);
+        }, this.player);
+      } else {
+        this.game.effectChainSystem.createChain(this.player, () => {});
+        this.game.effectChainSystem.start(() => {
+          this.doPlay(targets);
+        }, this.player);
+      }
     });
   }
 
-  addToChain() {
+  addToChain(targets: SelectedTarget[] = []) {
     assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
     assert(
       this.spellKind === SPELL_KINDS.BURST,
       'Only Burst spells can be added to the chain'
     );
     const chain = this.game.effectChainSystem.currentChain;
-    this.selectTargets(targets => {
-      chain.addEffect(() => {
-        this.doPlay(targets);
-      }, this.player);
-    });
+    chain.addEffect(() => {
+      this.doPlay(targets);
+    }, this.player);
   }
 
   forwardListeners() {

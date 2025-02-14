@@ -27,6 +27,7 @@ import { CardManagerComponent } from '../card/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
 import type { Evolution } from '../card/entities/evolution.entity';
 import { Spell } from '../card/entities/spell.entity';
+import { INTERACTION_STATES } from '../game/systems/interaction.system';
 
 export type PlayerOptions = {
   id: string;
@@ -215,11 +216,7 @@ export class Player
   playCard(card: DeckCard) {
     this.emitter.emit(PLAYER_EVENTS.BEFORE_PLAY_CARD, new PlayCardEvent({ card }));
     this.currentlyPlayedCard = card;
-    if (card instanceof Spell && this.game.effectChainSystem.currentChain) {
-      card.addToChain();
-    } else {
-      this.cards.play(card);
-    }
+    this.cards.play(card);
     this.currentlyPlayedCard = null;
     this.emitter.emit(PLAYER_EVENTS.AFTER_PLAY_CARD, new PlayCardEvent({ card }));
   }
