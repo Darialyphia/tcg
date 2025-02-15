@@ -5,10 +5,6 @@ export const testGameBuilder = () => {
   const options: Partial<GameOptions> = {};
 
   return {
-    withMapId(id: string) {
-      options.mapId = id;
-      return this;
-    },
     withSeed(seed: string) {
       options.rngSeed = seed;
       return this;
@@ -39,7 +35,6 @@ export const testGameBuilder = () => {
       const game = new Game({
         id: 'test',
         configOverrides: {},
-        mapId: options.mapId ?? '1v1',
         rngSeed: options.rngSeed ?? 'test'
       });
 

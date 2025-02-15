@@ -26,8 +26,6 @@ import type {
 import { CardManagerComponent } from '../card/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
 import type { Evolution } from '../card/entities/evolution.entity';
-import { Spell } from '../card/entities/spell.entity';
-import { INTERACTION_STATES } from '../game/systems/interaction.system';
 
 export type PlayerOptions = {
   id: string;
@@ -98,6 +96,10 @@ export class Player
         );
       });
     });
+  }
+
+  get isPlayer1() {
+    return this.game.playerSystem.player1.equals(this);
   }
 
   get opponent() {

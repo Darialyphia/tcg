@@ -25,6 +25,9 @@ export type Iterableify<T> = { [K in keyof T]: Iterable<T[K]> };
 export type PartialRecord<K extends keyof any, T> = {
   [P in K]?: T;
 };
+export type IndexedRecord<T extends AnyObject, TProperty extends keyof T> = {
+  [Key in string]: T & { [key in TProperty]: Key };
+};
 export type Defined<T> = Exclude<T, undefined | null>;
 export type Prettify<T> = {
   [K in keyof T]: T[K];

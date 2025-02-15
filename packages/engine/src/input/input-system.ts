@@ -20,9 +20,9 @@ import { HeroActionUseAbilityCardInput } from './inputs/hero-action-use-ability'
 import { DeclareAttackInput } from './inputs/declare-attack.input';
 import { DeclareBlockerInput } from './inputs/declare-blocker.input';
 import { UseCreatureAbilityInput } from './inputs/use-creature-ability.input';
-import { EndTurnInput } from './inputs/end-turn.input';
 import { SkipAttackResponseInput } from './inputs/skip-attack-response.input';
 import { PassChainInput } from './inputs/pass-chain.input';
+import { DeclareEndTurnInput } from './inputs/declare-end-turn.input';
 
 type GenericInputMap = Record<string, Constructor<Input<DefaultSchema>>>;
 
@@ -49,7 +49,7 @@ const inputMap = validateinputMap({
   declareBlocker: DeclareBlockerInput,
   skipAttackResponse: SkipAttackResponseInput,
   useCreatureAbility: UseCreatureAbilityInput,
-  endTurn: EndTurnInput,
+  declareEndTurn: DeclareEndTurnInput,
   passChain: PassChainInput
 });
 

@@ -4,8 +4,8 @@ import { GAME_PHASES } from '../../game/systems/game-phase.system';
 
 const schema = defaultInputSchema;
 
-export class EndTurnInput extends Input<typeof schema> {
-  readonly name = 'endTurn';
+export class DeclareEndTurnInput extends Input<typeof schema> {
+  readonly name = 'declareEndTurn';
 
   readonly allowedPhases = [GAME_PHASES.BATTLE];
 
@@ -17,6 +17,6 @@ export class EndTurnInput extends Input<typeof schema> {
       'You are not the active player'
     );
 
-    this.game.turnSystem.activePlayer.endTurn();
+    this.game.interaction.declareTurnEnd();
   }
 }

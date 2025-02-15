@@ -10,9 +10,6 @@ import type { CreatureSlot } from './game-board.system';
 import type { AnyCard } from '../../card/entities/card.entity';
 import type { Player } from '../../player/player.entity';
 import { System } from '../../system';
-import type { Evolution } from '../../card/entities/evolution.entity';
-import type { Creature } from '../../card/entities/creature.entity';
-import type { Hero } from '../../card/entities/hero.entity';
 import type { Effect } from '../effect-chain';
 import type { Attacker, Blocker, Defender } from '../../combat/damage';
 
@@ -21,7 +18,8 @@ export const INTERACTION_STATES = {
   SELECTING_CARD_TARGETS: 'selecting-card-targets',
   SELECTING_CARDS: 'selecting-cards',
   SEARCHING_DECK: 'searching-deck',
-  RESPOND_TO_ATTACK: 'respond-to-attack'
+  RESPOND_TO_ATTACK: 'respond-to-attack',
+  RESPOND_TO_END_TURN: 'respond-to-end-turn'
 } as const;
 export type InteractionState = Values<typeof INTERACTION_STATES>;
 
@@ -36,7 +34,10 @@ export const INTERACTION_STATE_TRANSITIONS = {
   DECLARE_BLOCKER: 'declare-blocker',
   START_CHAIN: 'start-chain',
   SKIP_ATTACK_RESPONSE: 'skip-attack-response',
-  COMBAT_RESOLVED: 'combat-resolved'
+  COMBAT_RESOLVED: 'combat-resolved',
+  DECLARE_TURN_END: 'declare-turn-end',
+  END_TURN: 'end-turn',
+  SKIP_END_TURN_RESPONSE: 'skip-end-turn-response'
 } as const;
 export type Interactiontransition = Values<typeof INTERACTION_STATE_TRANSITIONS>;
 
@@ -60,6 +61,10 @@ export type SelectedTarget =
 export type InteractionStateContext =
   | {
       state: typeof INTERACTION_STATES.IDLE;
+      ctx: EmptyObject;
+    }
+  | {
+      state: typeof INTERACTION_STATES.RESPOND_TO_END_TURN;
       ctx: EmptyObject;
     }
   | {
@@ -155,6 +160,31 @@ export class InteractionSystem extends System<never> {
       transition(
         INTERACTION_STATES.RESPOND_TO_ATTACK,
         INTERACTION_STATE_TRANSITIONS.SKIP_ATTACK_RESPONSE,
+        INTERACTION_STATES.IDLE
+      ),
+      transition(
+        INTERACTION_STATES.IDLE,
+        INTERACTION_STATE_TRANSITIONS.DECLARE_TURN_END,
+        INTERACTION_STATES.RESPOND_TO_END_TURN
+      ),
+      transition(
+        INTERACTION_STATES.RESPOND_TO_END_TURN,
+        INTERACTION_STATE_TRANSITIONS.SKIP_END_TURN_RESPONSE,
+        INTERACTION_STATES.IDLE
+      ),
+      transition(
+        INTERACTION_STATES.RESPOND_TO_END_TURN,
+        INTERACTION_STATE_TRANSITIONS.START_CHAIN,
+        INTERACTION_STATES.RESPOND_TO_END_TURN
+      ),
+      transition(
+        INTERACTION_STATES.RESPOND_TO_END_TURN,
+        INTERACTION_STATE_TRANSITIONS.COMBAT_RESOLVED,
+        INTERACTION_STATES.IDLE
+      ),
+      transition(
+        INTERACTION_STATES.RESPOND_TO_END_TURN,
+        INTERACTION_STATE_TRANSITIONS.END_TURN,
         INTERACTION_STATES.IDLE
       )
     ]
@@ -402,19 +432,26 @@ export class InteractionSystem extends System<never> {
       'Cannot start chain'
     );
 
-    assert(
-      this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK,
-      'Invalid interaction state context'
-    );
+    if (this._context.state === INTERACTION_STATES.RESPOND_TO_ATTACK) {
+      assert(
+        !player.equals(this._context.ctx.target.player),
+        'Attacking player cannot declare blocker'
+      );
 
-    assert(
-      !player.equals(this._context.ctx.target.player),
-      'Attacking player cannot declare blocker'
-    );
-
-    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.START_CHAIN);
-    this.game.effectChainSystem.createChain(player, this.resolveCombat.bind(this));
-    this.game.effectChainSystem.start(effect, player);
+      this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.START_CHAIN);
+      this.game.effectChainSystem.createChain(player, this.resolveCombat.bind(this));
+      this.game.effectChainSystem.start(effect, player);
+    } else if (this._context.state === INTERACTION_STATES.RESPOND_TO_END_TURN) {
+      assert(
+        !player.equals(this.game.turnSystem.activePlayer),
+        'Active player cannot declare blocker'
+      );
+      this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.START_CHAIN);
+      this.game.effectChainSystem.createChain(player, this.endTurn.bind(this));
+      this.game.effectChainSystem.start(effect, player);
+    } else {
+      throw new Error('Invalid interaction state context');
+    }
   }
 
   skipAttackResponse(player: Player) {
@@ -455,5 +492,54 @@ export class InteractionSystem extends System<never> {
       ctx: {}
     };
     this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.COMBAT_RESOLVED);
+  }
+
+  declareTurnEnd() {
+    assert(
+      this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.DECLARE_TURN_END),
+      'Cannot declare turn end'
+    );
+
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.DECLARE_TURN_END);
+  }
+
+  skipEndTurnResponse(player: Player) {
+    assert(
+      this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.SKIP_END_TURN_RESPONSE),
+      'Cannot skip end turn response'
+    );
+
+    assert(
+      this._context.state === INTERACTION_STATES.RESPOND_TO_END_TURN,
+      'Invalid interaction state context'
+    );
+
+    assert(
+      !player.equals(this.game.turnSystem.activePlayer),
+      'Cannot skip end turn response'
+    );
+
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.SKIP_END_TURN_RESPONSE);
+
+    this._context = {
+      state: 'idle',
+      ctx: {}
+    };
+  }
+
+  endTurn() {
+    assert(
+      this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.END_TURN),
+      'Cannot end turn'
+    );
+
+    this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.END_TURN);
+
+    this._context = {
+      state: 'idle',
+      ctx: {}
+    };
+
+    this.game.turnSystem.activePlayer.endTurn();
   }
 }

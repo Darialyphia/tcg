@@ -10,12 +10,27 @@ import { GameSnaphotSystem } from './systems/game-snapshot.system';
 import { InteractionSystem } from './systems/interaction.system';
 import { TurnSystem } from './systems/turn.system';
 import { EffectChainSystem } from './systems/effect-chain.system';
+import type { CardBlueprint } from '../card/card-blueprint';
+import type { BetterOmit, IndexedRecord, Prettify } from '@game/shared';
+import type { PlayerOptions } from '../player/player.entity';
+
+export type GamePlayer = Prettify<
+  BetterOmit<PlayerOptions, 'deck'> & {
+    deck: {
+      hero: { blueprintId: string };
+      cards: Array<{ blueprintId: string }>;
+      evolutions: Array<{ blueprintId: string }>;
+    };
+  }
+>;
 
 export type GameOptions = {
   id: string;
   rngSeed: string;
   history?: SerializedInput[];
   configOverrides: Partial<Config>;
+  cardPool: IndexedRecord<CardBlueprint, 'id'>;
+  players: [GamePlayer, GamePlayer];
 };
 
 export class Game {
@@ -43,12 +58,18 @@ export class Game {
 
   readonly serializer = new GameSnaphotSystem(this);
 
+  readonly cardPool: IndexedRecord<CardBlueprint, 'id'>;
+
+  readonly cardIdFactory = (blueprintId: string, playerId: string) =>
+    `${playerId}_card_${blueprintId}`;
+
   isSimulation = false;
 
   constructor(readonly options: GameOptions) {
     this.id = options.id;
     this.config = Object.assign({}, defaultConfig, options.configOverrides);
     this.setupStarEvents();
+    this.cardPool = options.cardPool;
   }
 
   // the event emitter doesnt provide the event name if you enable wildcards, so let's implement it ourselves
@@ -66,7 +87,20 @@ export class Game {
     this.rngSystem.initialize({ seed: this.options.rngSeed });
     this.inputSystem.initialize(this.options.history ?? []);
     this.gamePhaseSystem.initialize();
-    this.playerSystem.initialize({} as any);
+    this.playerSystem.initialize({
+      players: this.options.players.map(player => ({
+        ...player,
+        deck: {
+          hero: this.makeCard(player.deck.hero.blueprintId, player.id),
+          cards: player.deck.cards.map(card => {
+            return this.makeCard(card.blueprintId, player.id);
+          }),
+          evolutions: player.deck.evolutions.map(evo => {
+            return this.makeCard(evo.blueprintId, player.id);
+          })
+        }
+      }))
+    });
     this.interaction.initialize();
     this.board.initialize();
     this.serializer.initialize();
@@ -74,6 +108,16 @@ export class Game {
     this.effectChainSystem.initialize();
 
     this.emit(GAME_EVENTS.READY, new GameReadyEvent({}));
+  }
+
+  makeCard<T extends CardBlueprint>(
+    blueprintId: string,
+    playerId: string
+  ): { id: string; blueprint: T } {
+    return {
+      id: this.cardIdFactory(blueprintId, playerId),
+      blueprint: this.cardPool[blueprintId] as T
+    };
   }
 
   get on() {
