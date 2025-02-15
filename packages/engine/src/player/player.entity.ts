@@ -26,6 +26,7 @@ import type {
 import { CardManagerComponent } from '../card/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
 import type { Evolution } from '../card/entities/evolution.entity';
+import { CARD_EVENTS } from '../card/card.enums';
 
 export type PlayerOptions = {
   id: string;

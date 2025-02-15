@@ -8,7 +8,8 @@ import type { Spell } from '../card/entities/spell.entity';
 export const DAMAGE_TYPES = {
   COMBAT: 'COMBAT',
   ABILITY: 'ABILITY',
-  SPELL: 'SPELL'
+  SPELL: 'SPELL',
+  LOYALTY: 'LOYALTY'
 } as const;
 
 export type DamageType = Values<typeof DAMAGE_TYPES>;
@@ -77,5 +78,15 @@ export class AbilityDamage extends Damage<AnyCard> {
 
   getFinalAmount(target: Defender) {
     return target.getReceivedDamage(this.baseAmount, this, this._source);
+  }
+}
+
+export class LoyaltyDamage extends Damage<AnyCard> {
+  constructor(options: BetterOmit<DamageOptions<AnyCard>, 'type'>) {
+    super({ ...options, type: DAMAGE_TYPES.LOYALTY });
+  }
+
+  getFinalAmount() {
+    return this.baseAmount;
   }
 }

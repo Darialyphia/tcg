@@ -53,6 +53,9 @@ export class Hero extends Card<
     return this.interceptors.canBeAttackTarget.getValue(true, { attacker });
   }
 
+  get faction() {
+    return this.blueprint.faction;
+  }
   get maxHp(): number {
     return this.interceptors.maxHp.getValue(this.blueprint.maxHp, {});
   }

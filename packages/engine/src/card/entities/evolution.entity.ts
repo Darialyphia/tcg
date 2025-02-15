@@ -15,7 +15,8 @@ import {
   type Defender,
   type Attacker,
   type Damage,
-  CombatDamage
+  CombatDamage,
+  LoyaltyDamage
 } from '../../combat/damage';
 import type { Game } from '../../game/game';
 import type { Player } from '../../player/player.entity';
@@ -75,6 +76,18 @@ export class Evolution extends Card<
       this._isExhausted = false;
     });
     this.blueprint.onInit(this.game, this);
+  }
+
+  get loyalty() {
+    return this.blueprint.loyalty;
+  }
+
+  get loyaltyCost() {
+    if (this.faction?.equals(this.player.hero.faction)) {
+      return 0;
+    } else {
+      return 1 + this.loyalty;
+    }
   }
 
   get isExhausted() {
@@ -189,6 +202,7 @@ export class Evolution extends Card<
       new TakeDamageEvent({ damage, source: damage.source, target: this })
     );
   }
+
   private selectTributes(onComplete: (targets: Array<Creature | Evolution>) => void) {
     this.game.interaction.startSelectingTargets<'card'>({
       getNextTarget: targets => {
@@ -271,11 +285,14 @@ export class Evolution extends Card<
         onComplete: targets => {
           const target = targets[0];
 
+          this.emitter.emit(EVOLUTION_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
           tributeTargets.forEach(target => {
             this.player.discard(target as DeckCard);
             this.player.boardSide.remove(target as Creature | Evolution);
           });
-          this.emitter.emit(EVOLUTION_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
+          this.player.hero.receiveDamage(
+            new LoyaltyDamage({ baseAmount: this.loyaltyCost, source: this })
+          );
           this.playAt(target.zone, target.slot);
           this.emitter.emit(EVOLUTION_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
         }

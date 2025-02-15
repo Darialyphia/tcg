@@ -11,6 +11,7 @@ import {
   type SelectedTarget
 } from '../../game/systems/interaction.system';
 import { assert } from '@game/shared';
+import { LoyaltyDamage } from '../../combat/damage';
 
 export type SerializedSpell = SerializedCard & {
   spellKind: SpellKind;
@@ -35,6 +36,18 @@ export class Spell extends Card<
     this.blueprint.onInit(this.game, this);
   }
 
+  get loyalty() {
+    return this.blueprint.loyalty;
+  }
+
+  get loyaltyCost() {
+    if (this.faction?.equals(this.player.hero.faction)) {
+      return 0;
+    } else {
+      return 1 + this.loyalty;
+    }
+  }
+
   get manaCost() {
     return this.interceptors.manaCost.getValue(this.blueprint.manaCost, {});
   }
@@ -46,6 +59,9 @@ export class Spell extends Card<
   private doPlay(targets: SelectedTarget[]) {
     this.emitter.emit(SPELL_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
     this.player.spendMana(this.manaCost);
+    this.player.hero.receiveDamage(
+      new LoyaltyDamage({ baseAmount: this.loyaltyCost, source: this })
+    );
     this.blueprint.onPlay(this.game, this, targets);
     this.emitter.emit(SPELL_EVENTS.AFTER_PLAY, new CardBeforePlayEvent({}));
   }

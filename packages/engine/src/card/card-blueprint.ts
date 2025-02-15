@@ -86,6 +86,7 @@ export type HeroBlueprint = CardBlueprintBase & {
   kind: Extract<CardKind, typeof CARD_KINDS.HERO>;
   maxHp: number;
   abilities: Array<Ability<Hero>>;
+  faction: Faction;
 };
 
 export type CardBlueprint =

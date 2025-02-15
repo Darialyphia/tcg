@@ -13,6 +13,7 @@ import {
 } from '../card.events';
 import {
   CombatDamage,
+  LoyaltyDamage,
   type Attacker,
   type Damage,
   type Defender
@@ -74,6 +75,18 @@ export class Creature extends Card<
       this._isExhausted = false;
     });
     this.blueprint.onInit(this.game, this);
+  }
+
+  get loyalty() {
+    return this.blueprint.loyalty;
+  }
+
+  get loyaltyCost() {
+    if (this.faction?.equals(this.player.hero.faction)) {
+      return 0;
+    } else {
+      return 1 + this.loyalty;
+    }
   }
 
   get isExhausted() {
@@ -159,6 +172,9 @@ export class Creature extends Card<
   playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {
     this.emitter.emit(CREATURE_EVENTS.BEFORE_PLAY, new CardBeforePlayEvent({}));
     this.player.spendMana(this.manaCost);
+    this.player.hero.receiveDamage(
+      new LoyaltyDamage({ baseAmount: this.loyaltyCost, source: this })
+    );
 
     this.player.boardSide.summonCreature(this, zone, slot);
     this.blueprint.onPlay(this.game, this);
