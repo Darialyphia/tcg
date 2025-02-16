@@ -17,6 +17,7 @@ import { createCard } from '../card/card.factory';
 import type { AnyCard, CardOptions } from '../card/entities/card.entity';
 import type { Hero } from '../card/entities/hero.entity';
 import type {
+  CardBlueprint,
   CreatureBlueprint,
   EvolutionBlueprint,
   HeroBlueprint,
@@ -170,7 +171,7 @@ export class Player
       PLAYER_EVENTS.BEFORE_MANA_CHANGE,
       new PlayerManaChangeEvent({ amount })
     );
-    this._mana = Math.min(0, this._mana + amount);
+    this._mana = Math.max(0, this._mana + amount);
     this.emitter.emit(
       PLAYER_EVENTS.AFTER_MANA_CHANGE,
       new PlayerManaChangeEvent({ amount })
@@ -220,6 +221,7 @@ export class Player
     if (!card) return;
 
     this.putCardInManaZone(card);
+    this.gainMana(1);
   }
 
   putCardInManaZone(card: DeckCard) {
@@ -233,6 +235,16 @@ export class Player
     if (!card) return;
 
     this.playCard(card);
+  }
+
+  generateCard<T extends CardBlueprint = CardBlueprint>(blueprintId: string) {
+    const blueprint = this.game.cardPool[blueprintId] as T;
+    const card = createCard<T>(this.game, this, {
+      id: this.game.cardIdFactory(blueprint.id, this.id),
+      blueprint: blueprint
+    });
+
+    return card;
   }
 
   playCard(card: DeckCard) {

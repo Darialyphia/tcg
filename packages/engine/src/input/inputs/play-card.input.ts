@@ -4,6 +4,8 @@ import { GAME_PHASES } from '../../game/systems/game-phase.system';
 import { assert } from '@game/shared';
 import { Spell } from '../../card/entities/spell.entity';
 import { SPELL_KINDS } from '../../card/card.enums';
+import { AlreadyPerformedManaActionError } from './input-utils';
+import { Shard } from '../../card/entities/shard.entity';
 
 const schema = defaultInputSchema.extend({
   index: z.number()
@@ -38,11 +40,21 @@ export class PlayCardInput extends Input<typeof schema> {
     this.player.playCardAtIndex(this.payload.index);
   }
 
+  handleShard() {
+    assert(
+      !this.player.hasPlayedShardOrManaThisTurn,
+      new AlreadyPerformedManaActionError()
+    );
+    this.player.playCardAtIndex(this.payload.index);
+  }
+
   impl() {
     const card = this.card;
     assert(card, 'Card not found.');
     if (card instanceof Spell) {
       this.handleSpell(card);
+    } else if (card instanceof Shard) {
+      this.handleShard();
     } else {
       assert(this.isActive, 'You are not the active player.');
       this.player.playCardAtIndex(this.payload.index);

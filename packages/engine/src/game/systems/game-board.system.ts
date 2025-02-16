@@ -31,6 +31,12 @@ type ColumnEnchants = [
   Nullable<Spell>
 ];
 
+export class ShardZoneAlreadyOccupiedError extends Error {
+  constructor() {
+    super('Shard zone is already occupied');
+  }
+}
+
 class BoardSide {
   readonly player: Player;
   private _attackZone: CreatureZone;
@@ -166,8 +172,12 @@ class BoardSide {
   }
 
   placeShard(shard: Shard) {
-    assert(!this.shardZone, 'Shard zone is already occupied');
+    assert(!this.shardZone, new ShardZoneAlreadyOccupiedError());
     this.shardZone = shard;
+  }
+
+  get isShardZoneOccupied() {
+    return !!this.shardZone;
   }
 
   placeToManaZone(card: DeckCard) {
