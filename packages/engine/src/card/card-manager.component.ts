@@ -4,6 +4,7 @@ import type { Player } from '../player/player.entity';
 import { Deck, type DeckCard } from './entities/deck.entity';
 import { createCard } from './card.factory';
 import type { CreatureBlueprint, ShardBlueprint, SpellBlueprint } from './card-blueprint';
+import type { Evolution } from './entities/evolution.entity';
 
 export type CardManagerComponentOptions = {
   deck: CardOptions<CreatureBlueprint | SpellBlueprint | ShardBlueprint>[];
@@ -18,7 +19,7 @@ export class CardManagerComponent {
 
   readonly hand: DeckCard[] = [];
 
-  readonly discardPile = new Set<DeckCard>();
+  readonly discardPile = new Set<DeckCard | Evolution>();
 
   constructor(
     game: Game,
@@ -63,16 +64,24 @@ export class CardManagerComponent {
     });
   }
 
-  discard(card: DeckCard) {
+  removeFromHand(card: DeckCard) {
     const index = this.hand.findIndex(handCard => handCard.equals(card));
     this.hand.splice(index, 1);
-    this.discardPile.add(card);
+  }
+
+  discard(card: DeckCard) {
+    this.removeFromHand(card);
+    this.sendToDiscardPile(card);
   }
 
   play(card: DeckCard) {
     if (!this.hand.includes(card)) return;
+    this.removeFromHand(card);
     card.play();
-    this.discard(card);
+  }
+
+  sendToDiscardPile(card: DeckCard | Evolution) {
+    this.discardPile.add(card);
   }
 
   replaceCardAt(index: number) {

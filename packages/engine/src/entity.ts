@@ -1,10 +1,25 @@
 import type { AnyObject } from '@game/shared';
 import type { inferInterceptor, Interceptable } from './utils/interceptable';
-import { TypedEventEmitter } from './utils/typed-emitter';
+import { TypedEvent, TypedEventEmitter } from './utils/typed-emitter';
 
 export type EmptyEventMap = Record<string, never>;
 export type EmptyInterceptables = Record<string, never>;
 export type AnyEntity = Entity<AnyObject, AnyObject>;
+
+class InterceptableEvent extends TypedEvent<{ key: string }, { key: string }> {
+  constructor(payload: { key: string }) {
+    super(payload);
+  }
+
+  serialize(): { key: string } {
+    return this.data;
+  }
+}
+
+type InterceptableEventMap = {
+  ADD_INTERCEPTOR: InterceptableEvent;
+  REMOVE_INTERCEPTOR: InterceptableEvent;
+};
 
 export abstract class Entity<
   TE extends Record<string, any>,
@@ -12,7 +27,7 @@ export abstract class Entity<
 > {
   readonly id: string;
 
-  protected readonly emitter = new TypedEventEmitter<TE>();
+  protected readonly emitter = new TypedEventEmitter<TE & InterceptableEventMap>();
 
   protected interceptors: TI;
 

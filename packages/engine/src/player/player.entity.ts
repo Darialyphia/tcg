@@ -14,7 +14,7 @@ import {
 import { PLAYER_EVENTS } from './player-enums';
 import { GamePlayerEvent } from '../game/game.events';
 import { createCard } from '../card/card.factory';
-import type { CardOptions } from '../card/entities/card.entity';
+import type { AnyCard, CardOptions } from '../card/entities/card.entity';
 import type { Hero } from '../card/entities/hero.entity';
 import type {
   CreatureBlueprint,
@@ -26,7 +26,7 @@ import type {
 import { CardManagerComponent } from '../card/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
 import type { Evolution } from '../card/entities/evolution.entity';
-import { CARD_EVENTS } from '../card/card.enums';
+import { CARD_KINDS } from '../card/card.enums';
 
 export type PlayerOptions = {
   id: string;
@@ -62,6 +62,8 @@ export class Player
   _mana = 0;
 
   currentlyPlayedCard: Nullable<DeckCard> = null;
+
+  private _hasPlayedShardOrManaThisTurn = false;
 
   constructor(
     game: Game,
@@ -105,6 +107,10 @@ export class Player
 
   get opponent() {
     return this.game.playerSystem.players.find(p => !p.equals(this))!;
+  }
+
+  get hasPlayedShardOrManaThisTurn() {
+    return this._hasPlayedShardOrManaThisTurn;
   }
 
   get boardSide() {
@@ -209,6 +215,19 @@ export class Player
     return this.boardSide.getCreatures('defense');
   }
 
+  putCardAtIndexInManaZone(index: number) {
+    const card = this.cards.getCardAt(index);
+    if (!card) return;
+
+    this.putCardInManaZone(card);
+  }
+
+  putCardInManaZone(card: DeckCard) {
+    this.cards.removeFromHand(card);
+    this.boardSide.placeToManaZone(card);
+    this._hasPlayedShardOrManaThisTurn = true;
+  }
+
   playCardAtIndex(index: number) {
     const card = this.cards.getCardAt(index);
     if (!card) return;
@@ -221,7 +240,14 @@ export class Player
     this.currentlyPlayedCard = card;
     this.cards.play(card);
     this.currentlyPlayedCard = null;
+    if (card.kind === CARD_KINDS.SHARD) {
+      this._hasPlayedShardOrManaThisTurn = true;
+    }
     this.emitter.emit(PLAYER_EVENTS.AFTER_PLAY_CARD, new PlayCardEvent({ card }));
+  }
+
+  sendToDiscardPile(card: DeckCard | Evolution) {
+    this.cards.sendToDiscardPile(card);
   }
 
   playEvolutionAt(index: number) {
@@ -262,6 +288,7 @@ export class Player
   startTurn() {
     this.boardSide.convertShardToMana();
     this._mana = this.maxMana;
+    this._hasPlayedShardOrManaThisTurn = false;
 
     this.draw(this.game.config.CARDS_DRAWN_PER_TURN);
 

@@ -9,7 +9,8 @@ import {
   BlockEvent,
   BeforeDealDamageEvent,
   AfterDealDamageEvent,
-  TakeDamageEvent
+  TakeDamageEvent,
+  DestroyedEvent
 } from '../card.events';
 import {
   CombatDamage,
@@ -28,6 +29,7 @@ import { assert, isDefined, type Nullable } from '@game/shared';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { Hero } from './hero.entity';
 import { PLAYER_EVENTS } from '../../player/player-enums';
+import type { Entity } from '../../entity';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -75,6 +77,11 @@ export class Creature extends Card<
       this._isExhausted = false;
     });
     this.blueprint.onInit(this.game, this);
+    this.on('ADD_INTERCEPTOR', event => {
+      if (event.data.key === 'maxHp') {
+        this.checkHp({ source: this });
+      }
+    });
   }
 
   get loyalty() {
@@ -128,6 +135,18 @@ export class Creature extends Card<
 
     const { slot, zone } = this.position;
     return this.player.boardSide.getAdjacentCreatures(zone, slot);
+  }
+
+  private checkHp({ source }: { source: AnyCard }) {
+    if (this.isDead) {
+      this.destroy(source);
+    }
+  }
+
+  destroy(source: AnyCard) {
+    this.emitter.emit(CREATURE_EVENTS.BEFORE_DESTROYED, new DestroyedEvent({ source }));
+    this.player.boardSide.remove(this);
+    this.emitter.emit(CREATURE_EVENTS.AFTER_DESTROYED, new DestroyedEvent({ source }));
   }
 
   getDealtDamage(target: Defender) {
@@ -310,11 +329,21 @@ export class Creature extends Card<
       CREATURE_EVENTS.BEFORE_TAKE_DAMAGE,
       new TakeDamageEvent({ damage, source: damage.source, target: this })
     );
-    this.health.remove(damage.getFinalAmount(this));
+    this.removeHp(damage.getFinalAmount(this), damage.source);
     this.emitter.emit(
       CREATURE_EVENTS.AFTER_TAKE_DAMAGE,
       new TakeDamageEvent({ damage, source: damage.source, target: this })
     );
+  }
+
+  private addHp(amount: number, source: AnyCard) {
+    this.health.remove(amount);
+    this.checkHp({ source });
+  }
+
+  private removeHp(amount: number, source: AnyCard) {
+    this.health.add(amount, this.maxHp);
+    this.checkHp({ source });
   }
 
   forwardListeners() {

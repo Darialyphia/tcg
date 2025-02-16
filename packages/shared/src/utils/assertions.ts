@@ -24,6 +24,9 @@ export const exhaustiveSwitch = (x: never) => {
   throw new Error(`Missing case in exhaustive switch: ${x as any}`);
 };
 
-export function assert(expr: unknown, msg?: string): asserts expr {
-  if (!expr) throw new Error(msg);
+export function assert(expr: unknown, errOrMsg?: string | Error): asserts expr {
+  if (!expr) {
+    if (errOrMsg instanceof Error) throw errOrMsg;
+    throw new Error(errOrMsg);
+  }
 }

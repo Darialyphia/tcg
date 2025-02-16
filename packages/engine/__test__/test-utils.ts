@@ -1,8 +1,13 @@
 import { assert, isDefined } from '@game/shared';
 import { Game, type GameOptions, type GamePlayer } from '../src/game/game';
-import type { HeroBlueprint, ShardBlueprint } from '../src/card/card-blueprint';
-import { CARD_KINDS, CARD_SETS, FACTIONS, RARITIES } from '../src/card/card.enums';
+import type {
+  CreatureBlueprint,
+  HeroBlueprint,
+  ShardBlueprint
+} from '../src/card/card-blueprint';
+import { CARD_KINDS, CARD_SETS, CREATURE_JOB, RARITIES } from '../src/card/card.enums';
 import type { Faction } from '../src/card/entities/faction.entity';
+import { GAME_EVENTS } from '../src/game/game.events';
 
 export const testGameBuilder = () => {
   const options: Partial<GameOptions> = {};
@@ -12,14 +17,18 @@ export const testGameBuilder = () => {
       options.rngSeed = seed;
       return this;
     },
+    withCardPool(pool: GameOptions['cardPool']) {
+      options.cardPool = pool;
+      return this;
+    },
     withP1Deck(deck: GamePlayer['deck']) {
       // @ts-expect-error
       options.players ??= [];
       // @ts-expect-error
       options.players[0] = {
         deck,
-        id: '',
-        name: ''
+        id: 'p1',
+        name: 'player1'
       };
       return this;
     },
@@ -29,8 +38,8 @@ export const testGameBuilder = () => {
       // @ts-expect-error
       options.players[1] = {
         deck,
-        id: '',
-        name: ''
+        id: 'p2',
+        name: 'player2'
       };
       return this;
     },
@@ -49,10 +58,27 @@ export const testGameBuilder = () => {
 
       game.initialize();
 
+      const errors: Error[] = [];
+
+      game.on(GAME_EVENTS.ERROR, event => {
+        errors.push(event.data.error);
+      });
+
       return {
-        game
-        // player1: game.playerSystem.player1,
-        // player2: game.playerSystem.player2
+        game,
+        skipMulligan: () => {
+          game.dispatch({
+            type: 'mulligan',
+            payload: { indices: [], playerId: game.playerSystem.player1.id }
+          });
+          game.dispatch({
+            type: 'mulligan',
+            payload: { indices: [], playerId: game.playerSystem.player2.id }
+          });
+        },
+        errors,
+        player1: game.playerSystem.player1,
+        player2: game.playerSystem.player2
       };
     }
   };
@@ -79,7 +105,7 @@ export const makeTestHeroBlueprint = ({
   setId: CARD_SETS.CORE
 });
 
-export const makeTestShard = ({
+export const makeTestShardBlueprint = ({
   id,
   faction
 }: {
@@ -90,6 +116,40 @@ export const makeTestShard = ({
   faction,
   name: 'Test Hero',
   kind: CARD_KINDS.SHARD,
+  description: 'Test Hero Description',
+  imageId: '',
+  rarity: RARITIES.COMMON,
+  setId: CARD_SETS.CORE,
+  loyalty: 0,
+  onInit() {},
+  onPlay() {}
+});
+
+export const makeTestCreatureBlueprint = ({
+  id,
+  faction,
+  atk = 1,
+  manaCost = 1,
+  maxHp = 1,
+  job = CREATURE_JOB.STRIKER
+}: {
+  id: string;
+  faction: Faction;
+  maxHp?: number;
+  atk?: number;
+  manaCost?: number;
+  job?: string;
+}): CreatureBlueprint => ({
+  id,
+  faction,
+  atk,
+  maxHp,
+  manaCost,
+  job,
+  abilities: [],
+  keywords: [],
+  name: 'Test Hero',
+  kind: CARD_KINDS.CREATURE,
   description: 'Test Hero Description',
   imageId: '',
   rarity: RARITIES.COMMON,

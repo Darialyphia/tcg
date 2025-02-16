@@ -23,6 +23,7 @@ import { UseCreatureAbilityInput } from './inputs/use-creature-ability.input';
 import { SkipAttackResponseInput } from './inputs/skip-attack-response.input';
 import { PassChainInput } from './inputs/pass-chain.input';
 import { DeclareEndTurnInput } from './inputs/declare-end-turn.input';
+import { PutCardInManaZoneInput } from './inputs/put-card-in-mana-zone.input';
 
 type GenericInputMap = Record<string, Constructor<Input<DefaultSchema>>>;
 
@@ -50,7 +51,8 @@ const inputMap = validateinputMap({
   skipAttackResponse: SkipAttackResponseInput,
   useCreatureAbility: UseCreatureAbilityInput,
   declareEndTurn: DeclareEndTurnInput,
-  passChain: PassChainInput
+  passChain: PassChainInput,
+  putCardInManaZone: PutCardInManaZoneInput
 });
 
 type InputMap = typeof inputMap;

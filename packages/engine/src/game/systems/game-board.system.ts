@@ -8,6 +8,7 @@ import type { Shard } from '../../card/entities/shard.entity';
 import { Spell } from '../../card/entities/spell.entity';
 import type { Player } from '../../player/player.entity';
 import { System } from '../../system';
+import type { DeckCard } from '../../card/entities/deck.entity';
 
 export type CreatureSlot = 0 | 1 | 2 | 3 | 4;
 
@@ -169,6 +170,10 @@ class BoardSide {
     this.shardZone = shard;
   }
 
+  placeToManaZone(card: DeckCard) {
+    this.manaZone.push(card);
+  }
+
   remove(card: Creature | Evolution | Spell) {
     if (card instanceof Creature || card instanceof Evolution) {
       const zone = card.position!.zone;
@@ -184,6 +189,8 @@ class BoardSide {
         enchant => !enchant.equals(card)
       );
     }
+
+    this.player.sendToDiscardPile(card);
   }
 
   get totalMana() {
