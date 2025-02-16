@@ -108,7 +108,10 @@ export type CreatureEventMap = CardEventMap & {
   [CREATURE_EVENTS.AFTER_TAKE_DAMAGE]: TakeDamageEvent;
 };
 
-export type SpellEventMap = CardEventMap;
+export type SpellEventMap = CardEventMap & {
+  [CREATURE_EVENTS.BEFORE_DESTROYED]: DestroyedEvent;
+  [CREATURE_EVENTS.AFTER_DESTROYED]: DestroyedEvent;
+};
 export type ShardEventMap = CardEventMap;
 export type EvolutionEventMap = CardEventMap & {
   [CREATURE_EVENTS.BEFORE_ATTACK]: AttackEvent;

@@ -4,11 +4,12 @@ import { GAME_PHASES } from '../../game/systems/game-phase.system';
 import { assert } from '@game/shared';
 import { Spell } from '../../card/entities/spell.entity';
 import { SPELL_KINDS } from '../../card/card.enums';
-import { AlreadyPerformedManaActionError } from './input-utils';
+import { AlreadyPerformedManaActionError } from './input-errors';
 import { Shard } from '../../card/entities/shard.entity';
+import { CardNotFoundError } from '../../card/card-errors';
 
 const schema = defaultInputSchema.extend({
-  index: z.number()
+  index: z.number().nonnegative()
 });
 
 export class PlayCardInput extends Input<typeof schema> {
@@ -50,7 +51,7 @@ export class PlayCardInput extends Input<typeof schema> {
 
   impl() {
     const card = this.card;
-    assert(card, 'Card not found.');
+    assert(card, new CardNotFoundError());
     if (card instanceof Spell) {
       this.handleSpell(card);
     } else if (card instanceof Shard) {

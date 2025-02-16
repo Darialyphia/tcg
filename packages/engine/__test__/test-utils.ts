@@ -3,9 +3,16 @@ import { Game, type GameOptions, type GamePlayer } from '../src/game/game';
 import type {
   CreatureBlueprint,
   HeroBlueprint,
-  ShardBlueprint
+  ShardBlueprint,
+  SpellBlueprint
 } from '../src/card/card-blueprint';
-import { CARD_KINDS, CARD_SETS, CREATURE_JOB, RARITIES } from '../src/card/card.enums';
+import {
+  CARD_KINDS,
+  CARD_SETS,
+  CREATURE_JOB,
+  RARITIES,
+  type SpellKind
+} from '../src/card/card.enums';
 import type { Faction } from '../src/card/entities/faction.entity';
 import { GAME_EVENTS } from '../src/game/game.events';
 
@@ -131,7 +138,9 @@ export const makeTestCreatureBlueprint = ({
   atk = 1,
   manaCost = 1,
   maxHp = 1,
-  job = CREATURE_JOB.STRIKER
+  job = CREATURE_JOB.STRIKER,
+  onPlay = () => {},
+  onInit = () => {}
 }: {
   id: string;
   faction: Faction;
@@ -139,6 +148,8 @@ export const makeTestCreatureBlueprint = ({
   atk?: number;
   manaCost?: number;
   job?: string;
+  onPlay?: CreatureBlueprint['onPlay'];
+  onInit?: CreatureBlueprint['onPlay'];
 }): CreatureBlueprint => ({
   id,
   faction,
@@ -146,15 +157,48 @@ export const makeTestCreatureBlueprint = ({
   maxHp,
   manaCost,
   job,
+  onPlay,
+  onInit,
   abilities: [],
   keywords: [],
-  name: 'Test Hero',
+  name: 'Test Creature',
   kind: CARD_KINDS.CREATURE,
-  description: 'Test Hero Description',
+  description: 'Test Creature Description',
   imageId: '',
   rarity: RARITIES.COMMON,
   setId: CARD_SETS.CORE,
-  loyalty: 0,
-  onInit() {},
-  onPlay() {}
+  loyalty: 0
+});
+
+export const makeTestSpellBlueprint = ({
+  id,
+  faction,
+  manaCost = 1,
+  spellKind,
+  followup,
+  onPlay = () => {},
+  onInit = () => {}
+}: {
+  id: string;
+  spellKind: SpellKind;
+  followup: SpellBlueprint['followup'];
+  faction: Faction;
+  manaCost?: number;
+  onPlay?: SpellBlueprint['onPlay'];
+  onInit?: SpellBlueprint['onInit'];
+}): SpellBlueprint => ({
+  id,
+  faction,
+  manaCost,
+  spellKind,
+  followup,
+  onInit,
+  onPlay,
+  name: 'Test Spell',
+  kind: CARD_KINDS.SPELL,
+  description: 'Test Spell Description',
+  imageId: '',
+  rarity: RARITIES.COMMON,
+  setId: CARD_SETS.CORE,
+  loyalty: 0
 });

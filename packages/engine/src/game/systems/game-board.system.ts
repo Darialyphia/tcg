@@ -1,5 +1,5 @@
 import { assert, isDefined, type Nullable } from '@game/shared';
-import { SPELL_KINDS } from '../../card/card.enums';
+import { SPELL_KINDS, type SpellKind } from '../../card/card.enums';
 import type { AnyCard } from '../../card/entities/card.entity';
 import { Creature } from '../../card/entities/creature.entity';
 import { Evolution } from '../../card/entities/evolution.entity';
@@ -24,18 +24,12 @@ type CreatureZone = {
 };
 
 type ColumnEnchants = [
-  Nullable<Spell>,
-  Nullable<Spell>,
-  Nullable<Spell>,
-  Nullable<Spell>,
-  Nullable<Spell>
+  Array<Spell>,
+  Array<Spell>,
+  Array<Spell>,
+  Array<Spell>,
+  Array<Spell>
 ];
-
-export class ShardZoneAlreadyOccupiedError extends Error {
-  constructor() {
-    super('Shard zone is already occupied');
-  }
-}
 
 class BoardSide {
   readonly player: Player;
@@ -112,7 +106,7 @@ class BoardSide {
     zone: 'attack' | 'defense',
     slot: CreatureSlot
   ) {
-    assert(!this.isOccupied(zone, slot), 'Slot is already occupied');
+    assert(!this.isOccupied(zone, slot), new CreatureSlotAlreadyOccupiedError());
 
     this.getZone(zone).creatures[slot] = card;
   }
@@ -121,8 +115,21 @@ class BoardSide {
     return isDefined(this.getZone(zone).creatures[slot]);
   }
 
+  get hasUnoccupiedSlot() {
+    return !(
+      this.attackZone.creatures.every(isDefined) &&
+      this.defenseZone.creatures.every(isDefined)
+    );
+  }
+
   getCreatures(zone: 'attack' | 'defense'): (Creature | Evolution)[] {
     return this.getZone(zone).creatures.filter(isDefined);
+  }
+
+  getAllCreatures(): (Creature | Evolution)[] {
+    return [...this.attackZone.creatures, ...this.defenseZone.creatures].filter(
+      isDefined
+    );
   }
 
   getAdjacentCreatures(
@@ -211,7 +218,7 @@ class BoardSide {
 export class GameBoardSystem extends System<never> {
   sides!: [BoardSide, BoardSide];
 
-  columnEnchants: ColumnEnchants = [null, null, null, null, null];
+  columnEnchants: ColumnEnchants = [[], [], [], [], []];
 
   initialize(): void {
     this.sides = this.game.playerSystem.players.map(player => new BoardSide(player)) as [
@@ -221,4 +228,16 @@ export class GameBoardSystem extends System<never> {
   }
 
   shutdown() {}
+}
+
+export class CreatureSlotAlreadyOccupiedError extends Error {
+  constructor() {
+    super('Creature slot is already occupied');
+  }
+}
+
+export class ShardZoneAlreadyOccupiedError extends Error {
+  constructor() {
+    super('Shard zone is already occupied');
+  }
 }

@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { defaultInputSchema, Input } from '../input';
 import { GAME_PHASES } from '../../game/systems/game-phase.system';
-import { assert } from 'vitest';
-import { isDefined } from '@game/shared';
+import { assert, isDefined } from '@game/shared';
+import { CardNotFoundError } from '../../card/card-errors';
 
 const schema = defaultInputSchema.extend({
   cardId: z.string(),
-  index: z.number()
+  index: z.number().nonnegative()
 });
 
 export class UseCreatureAbilityInput extends Input<typeof schema> {
@@ -38,7 +38,7 @@ export class UseCreatureAbilityInput extends Input<typeof schema> {
       this.isActive || this.hasChain,
       "Cannot use ability without an effect chain during opponent's turn."
     );
-    assert(this.card, 'Card not found.');
+    assert(this.card, new CardNotFoundError());
     assert(this.card.canUseAbility, 'Card cannot use ability.');
 
     if (this.hasChain) {

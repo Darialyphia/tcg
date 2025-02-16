@@ -75,9 +75,10 @@ export class Player
     this.hero = createCard(game, this, options.deck.hero);
     this.cards = new CardManagerComponent(game, this, {
       deck: options.deck.cards,
-      maxHandSize: this.game.config.INITIAL_HAND_SIZE,
+      maxHandSize: this.game.config.MAX_HAND_SIZE,
       shouldShuffleDeck: this.game.config.SHUFFLE_DECK_AT_START_OF_GAME
     });
+    this.draw(this.game.config.INITIAL_HAND_SIZE);
     this.evolutions = options.deck.evolutions.map(evolutionOptions =>
       createCard(game, this, evolutionOptions)
     );
@@ -154,6 +155,10 @@ export class Player
     return this.cards.discard.bind(this.cards);
   }
 
+  get isHandFull() {
+    return this.cards.isHandFull;
+  }
+
   get addToHand() {
     return this.cards.addToHand.bind(this.cards);
   }
@@ -219,7 +224,6 @@ export class Player
   putCardAtIndexInManaZone(index: number) {
     const card = this.cards.getCardAt(index);
     if (!card) return;
-
     this.putCardInManaZone(card);
     this.gainMana(1);
   }

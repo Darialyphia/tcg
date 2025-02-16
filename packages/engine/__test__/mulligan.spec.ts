@@ -12,7 +12,7 @@ import {
 } from '../src/input/inputs/mulligan.input';
 
 describe('Mulligan', () => {
-  const setupWithTestCardPoolAndDecks = () => {
+  const setup = () => {
     const cardPool = {
       'test-hero': makeTestHeroBlueprint({ id: 'test-hero', faction: FACTIONS.F1 }),
       'test-creature': makeTestCreatureBlueprint({
@@ -37,14 +37,14 @@ describe('Mulligan', () => {
   };
 
   test('game starts once both players have mulliganed', () => {
-    const { game, skipMulligan } = setupWithTestCardPoolAndDecks();
+    const { game, skipMulligan } = setup();
     skipMulligan();
 
     expect(game.gamePhaseSystem.phase).toBe(GAME_PHASES.BATTLE);
   });
 
   test('a player can only mulligan once', () => {
-    const { game, player1, errors } = setupWithTestCardPoolAndDecks();
+    const { game, player1, errors } = setup();
 
     game.dispatch({
       type: 'mulligan',
@@ -60,7 +60,7 @@ describe('Mulligan', () => {
   });
 
   test('a player can only mulligan up to 3 cards', () => {
-    const { game, player1, errors } = setupWithTestCardPoolAndDecks();
+    const { game, player1, errors } = setup();
 
     game.dispatch({
       type: 'mulligan',

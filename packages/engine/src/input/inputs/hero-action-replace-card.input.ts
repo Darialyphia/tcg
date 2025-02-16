@@ -3,7 +3,7 @@ import { defaultInputSchema, Input } from '../input';
 import { GAME_PHASES } from '../../game/systems/game-phase.system';
 
 const schema = defaultInputSchema.extend({
-  index: z.number()
+  index: z.number().nonnegative()
 });
 
 export class HeroActionReplaceCardInput extends Input<typeof schema> {

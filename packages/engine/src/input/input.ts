@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { assert, type JSONValue, type Serializable } from '@game/shared';
 import type { Game } from '../game/game';
 import type { GamePhase } from '../game/systems/game-phase.system';
+import {
+  NoPayloadError,
+  UnknownPlayerError,
+  WrongGamePhaseError
+} from './inputs/input-errors';
 
 export const defaultInputSchema = z.object({
   playerId: z.string()
@@ -30,7 +35,7 @@ export abstract class Input<TSchema extends DefaultSchema>
 
   private parsePayload() {
     const parsed = this.payloadSchema.safeParse(this.rawPayload);
-    assert(parsed.success, parsed.error?.message);
+    assert(parsed.success, parsed.error);
 
     this.payload = parsed.data;
   }
@@ -46,12 +51,9 @@ export abstract class Input<TSchema extends DefaultSchema>
   execute() {
     this.parsePayload();
 
-    assert(this.payload, 'input payload is required');
-    assert(this.player, `Unknown player id: ${this.payload.playerId}`);
-    assert(
-      this.isValidPhase,
-      `Cannot execute input ${this.name} during game phase ${this.game.phase}`
-    );
+    assert(this.payload, new NoPayloadError());
+    assert(this.player, new UnknownPlayerError(this.payload.playerId));
+    assert(this.isValidPhase, new WrongGamePhaseError());
 
     this.impl();
   }

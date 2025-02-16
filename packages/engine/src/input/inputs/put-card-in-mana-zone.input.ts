@@ -2,12 +2,10 @@ import { z } from 'zod';
 import { defaultInputSchema, Input } from '../input';
 import { GAME_PHASES } from '../../game/systems/game-phase.system';
 import { assert } from '@game/shared';
-import { Spell } from '../../card/entities/spell.entity';
-import { SPELL_KINDS } from '../../card/card.enums';
-import { AlreadyPerformedManaActionError, NotActivePlayerError } from './input-utils';
+import { AlreadyPerformedManaActionError, NotActivePlayerError } from './input-errors';
 
 const schema = defaultInputSchema.extend({
-  index: z.number()
+  index: z.number().nonnegative()
 });
 
 export class PutCardInManaZoneInput extends Input<typeof schema> {

@@ -32,6 +32,7 @@ export class EffectChainSystem extends System<never> {
   }
 
   pass(player: Player) {
+    console.log('pass', this._currentChain);
     assert(this._currentChain, 'No active effect chain');
     this._currentChain.pass(player);
   }

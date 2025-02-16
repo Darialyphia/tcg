@@ -29,7 +29,7 @@ import { assert, isDefined, type Nullable } from '@game/shared';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { Hero } from './hero.entity';
 import { PLAYER_EVENTS } from '../../player/player-enums';
-import type { Entity } from '../../entity';
+import { AllCreaturesSlotsOccupiedError, NotEnoughManaError } from '../card-errors';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -163,29 +163,32 @@ export class Creature extends Card<
     });
   }
 
-  play(location?: { slot: CreatureSlot; zone: 'attack' | 'defense' }) {
-    if (isDefined(location)) {
-      this.playAt(location.zone, location.slot);
-    } else {
-      this.game.interaction.startSelectingTargets({
-        getNextTarget: targets => {
-          if (targets.length) {
-            return null;
-          }
+  get hasEnoughMana() {
+    return this.manaCost <= this.player.mana;
+  }
 
-          return {
-            type: 'creatureSlot',
-            isElligible: ({ zone, slot }) => !this.player.boardSide.isOccupied(zone, slot)
-          };
-        },
-        canCommit: targets => targets.length > 0,
-        onComplete: targets => {
-          const target = targets[0];
-          assert(target.type === 'creatureSlot', 'Expected target to be a creature slot');
-          this.playAt(target.zone, target.slot);
+  play() {
+    assert(this.hasEnoughMana, new NotEnoughManaError());
+    assert(this.player.boardSide.hasUnoccupiedSlot, new AllCreaturesSlotsOccupiedError());
+
+    this.game.interaction.startSelectingTargets({
+      getNextTarget: targets => {
+        if (targets.length) {
+          return null;
         }
-      });
-    }
+
+        return {
+          type: 'creatureSlot',
+          isElligible: ({ zone, slot }) => !this.player.boardSide.isOccupied(zone, slot)
+        };
+      },
+      canCommit: targets => targets.length > 0,
+      onComplete: targets => {
+        const target = targets[0];
+        assert(target.type === 'creatureSlot', 'Expected target to be a creature slot');
+        this.playAt(target.zone, target.slot);
+      }
+    });
   }
 
   playAt(zone: 'attack' | 'defense', slot: CreatureSlot) {

@@ -6,11 +6,11 @@ import {
   testGameBuilder
 } from './test-utils';
 import { FACTIONS } from '../src/card/card.enums';
-import { AlreadyPerformedManaActionError } from '../src/input/inputs/input-utils';
+import { AlreadyPerformedManaActionError } from '../src/input/inputs/input-errors';
 import type { ShardBlueprint } from '../src/card/card-blueprint';
 import { ShardZoneAlreadyOccupiedError } from '../src/game/systems/game-board.system';
 
-const setupWithTestCardPoolAndDecks = () => {
+const setup = () => {
   const cardPool = {
     'test-hero': makeTestHeroBlueprint({ id: 'test-hero', faction: FACTIONS.F1 }),
     'test-creature': makeTestCreatureBlueprint({
@@ -43,7 +43,7 @@ const setupWithTestCardPoolAndDecks = () => {
 
 describe('Mana Zone', () => {
   test('a card put in mana zone is removed from hand', () => {
-    const { game, player1 } = setupWithTestCardPoolAndDecks();
+    const { game, player1 } = setup();
     const index = 0;
     const card = player1.getCardAt(index);
     game.dispatch({
@@ -55,7 +55,7 @@ describe('Mana Zone', () => {
   });
 
   test('a card put in mana zone immediately gives mana', () => {
-    const { game, player1 } = setupWithTestCardPoolAndDecks();
+    const { game, player1 } = setup();
     game.dispatch({
       type: 'putCardInManaZone',
       payload: { index: 0, playerId: player1.id }
@@ -65,7 +65,7 @@ describe('Mana Zone', () => {
   });
 
   test('a player can only put a card in mana zone once per turn', () => {
-    const { game, player1, errors } = setupWithTestCardPoolAndDecks();
+    const { game, player1, errors } = setup();
     game.dispatch({
       type: 'putCardInManaZone',
       payload: { index: 0, playerId: player1.id }
@@ -79,7 +79,7 @@ describe('Mana Zone', () => {
   });
 
   test('a player cannot put a card in mana zone if they already put a card in shard zone', () => {
-    const { game, player1, errors } = setupWithTestCardPoolAndDecks();
+    const { game, player1, errors } = setup();
     const card = player1.generateCard<ShardBlueprint>('test-shard');
     player1.addToHand(card);
 
@@ -101,7 +101,7 @@ describe('Mana Zone', () => {
 
 describe('Shard Zone', () => {
   test('a card put in shard zone is removed from hand', () => {
-    const { game, player1 } = setupWithTestCardPoolAndDecks();
+    const { game, player1 } = setup();
     const card = player1.generateCard<ShardBlueprint>('test-shard');
     player1.addToHand(card);
 
@@ -114,7 +114,7 @@ describe('Shard Zone', () => {
   });
 
   test('cannot put a card in shard zone if there already is one', () => {
-    const { game, player1, errors } = setupWithTestCardPoolAndDecks();
+    const { game, player1, errors } = setup();
 
     const firstShard = player1.generateCard<ShardBlueprint>('test-shard');
     player1.boardSide.placeShard(firstShard);
@@ -130,7 +130,7 @@ describe('Shard Zone', () => {
   });
 
   test('cannot put a card in shard one if a card has already been put in mana zone', () => {
-    const { game, player1, errors } = setupWithTestCardPoolAndDecks();
+    const { game, player1, errors } = setup();
 
     game.dispatch({
       type: 'putCardInManaZone',
@@ -149,7 +149,7 @@ describe('Shard Zone', () => {
   });
 
   test('shard zone is correctly emptied at the start of turn', () => {
-    const { player1, player2 } = setupWithTestCardPoolAndDecks();
+    const { player1, player2 } = setup();
     const shard = player1.generateCard<ShardBlueprint>('test-shard');
     player1.boardSide.placeShard(shard);
     player1.endTurn();
@@ -158,7 +158,7 @@ describe('Shard Zone', () => {
   });
 
   test('shards are properly converted to mana at the start of turn', () => {
-    const { player1, player2 } = setupWithTestCardPoolAndDecks();
+    const { player1, player2 } = setup();
     const shard = player1.generateCard<ShardBlueprint>('test-shard');
     player1.boardSide.placeShard(shard);
     expect(player1.mana).toBe(0);

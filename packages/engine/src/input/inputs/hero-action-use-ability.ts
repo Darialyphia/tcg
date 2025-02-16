@@ -5,7 +5,7 @@ import { assert } from 'vitest';
 import { isDefined } from '@game/shared';
 
 const schema = defaultInputSchema.extend({
-  index: z.number()
+  index: z.number().nonnegative()
 });
 
 export class HeroActionUseAbilityCardInput extends Input<typeof schema> {

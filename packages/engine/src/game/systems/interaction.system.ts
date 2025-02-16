@@ -3,6 +3,7 @@ import {
   type Nullable,
   type Values,
   assert,
+  isDefined,
   StateMachine,
   transition
 } from '@game/shared';
@@ -12,6 +13,7 @@ import type { Player } from '../../player/player.entity';
 import { System } from '../../system';
 import type { Effect } from '../effect-chain';
 import type { Attacker, Blocker, Defender } from '../../combat/damage';
+import { match } from 'ts-pattern';
 
 export const INTERACTION_STATES = {
   IDLE: 'idle',
@@ -49,6 +51,14 @@ export type EffectTarget =
   | {
       type: 'creatureSlot';
       isElligible: (opts: { zone: 'attack' | 'defense'; slot: CreatureSlot }) => boolean;
+    }
+  | {
+      type: 'row';
+      isElligible: (opts: { zone: 'attack' | 'defense'; playerId: string }) => boolean;
+    }
+  | {
+      type: 'column';
+      isElligible: (opts: { slot: CreatureSlot }) => boolean;
     };
 
 export type SelectedTarget =
@@ -56,7 +66,9 @@ export type SelectedTarget =
       type: 'card';
       card: AnyCard;
     }
-  | { type: 'creatureSlot'; slot: CreatureSlot; zone: 'attack' | 'defense' };
+  | { type: 'creatureSlot'; slot: CreatureSlot; zone: 'attack' | 'defense' }
+  | { type: 'row'; zone: 'attack' | 'defense'; player: Player }
+  | { type: 'column'; slot: CreatureSlot };
 
 export type InteractionStateContext =
   | {
@@ -195,10 +207,6 @@ export class InteractionSystem extends System<never> {
     ctx: {}
   };
 
-  private assertStateCtx(state: InteractionStateContext['state']) {
-    assert(this._context.state === state, 'Invalid interaction state context');
-  }
-
   initialize(): void {}
 
   shutdown(): void {}
@@ -220,7 +228,6 @@ export class InteractionSystem extends System<never> {
       this.stateMachine.can(INTERACTION_STATE_TRANSITIONS.START_SELECTING_TARGETS),
       'Cannot play card'
     );
-
     this._context = {
       state: 'selecting-card-targets',
       ctx: {
@@ -233,7 +240,27 @@ export class InteractionSystem extends System<never> {
       }
     };
     this.stateMachine.dispatch(INTERACTION_STATE_TRANSITIONS.START_SELECTING_TARGETS);
-    this.checkCardTargets();
+    this.commitTargetsIfAble();
+  }
+
+  private validateTarget(target: SelectedTarget) {
+    assert(
+      this._context.state === INTERACTION_STATES.SELECTING_CARD_TARGETS,
+      'Cannot add card target'
+    );
+    const nextTarget = this._context.ctx.getNextTarget(this._context.ctx.selectedTargets);
+    assert(isDefined(nextTarget), new TooManyTargetsError());
+    assert(nextTarget.type === target.type, new IllegalTargetError());
+
+    match(target)
+      .with({ type: 'card' }, ({ card }) => {
+        assert(nextTarget.isElligible(card as any), new IllegalTargetError());
+      })
+      .with({ type: 'creatureSlot' }, ({ slot, zone }) => {
+        assert(nextTarget.isElligible({ slot, zone } as any), new IllegalTargetError());
+      })
+      .with({ type: 'row' }, { type: 'column' }, () => {}) // no further validation necessary
+      .exhaustive();
   }
 
   addCardTarget(target: SelectedTarget) {
@@ -241,18 +268,18 @@ export class InteractionSystem extends System<never> {
       this._context.state === INTERACTION_STATES.SELECTING_CARD_TARGETS,
       'Cannot add card target'
     );
-
+    this.validateTarget(target);
     this._context.ctx.selectedTargets.push(target);
-    this.checkCardTargets();
+    this.commitTargetsIfAble();
   }
 
-  private checkCardTargets() {
+  private commitTargetsIfAble() {
     assert(
       this._context.state === INTERACTION_STATES.SELECTING_CARD_TARGETS,
       'Invalid state'
     );
-
-    if (this._context.ctx.getNextTarget(this._context.ctx.selectedTargets)) {
+    const nextTarget = this._context.ctx.getNextTarget(this._context.ctx.selectedTargets);
+    if (!isDefined(nextTarget)) {
       this.commitTargets();
     }
   }
@@ -268,7 +295,7 @@ export class InteractionSystem extends System<never> {
     );
     assert(
       this._context.ctx.canCommit(this._context.ctx.selectedTargets),
-      'Cannot commit targets'
+      new IllegalTargetError()
     );
 
     const { selectedTargets, onComplete } = this._context.ctx;
@@ -541,5 +568,23 @@ export class InteractionSystem extends System<never> {
     };
 
     this.game.turnSystem.activePlayer.endTurn();
+  }
+}
+
+export class TooManyTargetsError extends Error {
+  constructor() {
+    super('You cannot add more targets');
+  }
+}
+
+export class InvalidInteractionStateError extends Error {
+  constructor() {
+    super('Invalid interaction state');
+  }
+}
+
+export class IllegalTargetError extends Error {
+  constructor() {
+    super('Illegal target');
   }
 }

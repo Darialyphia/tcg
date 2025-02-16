@@ -14,7 +14,7 @@ export const CREATURE_EVENTS = {
   BEFORE_BLOCK: 'before_block',
   AFTER_BLOCK: 'after_block',
   BEFORE_DESTROYED: 'before_destroyed',
-  AFTER_DESTROYED: 'before_destroyed',
+  AFTER_DESTROYED: 'after_destroyed',
   BEFORE_DEAL_DAMAGE: 'before_deal_damage',
   AFTER_DEAL_DAMAGE: 'after_deal_damage',
   BEFORE_TAKE_DAMAGE: 'before_take_damage',
@@ -27,7 +27,11 @@ export type CreatureCardEvent = Values<typeof CREATURE_EVENTS>;
 export const EVOLUTION_EVENTS = { ...CREATURE_EVENTS } as const;
 export type EvolutionCardEvent = Values<typeof EVOLUTION_EVENTS>;
 
-export const SPELL_EVENTS = { ...CARD_EVENTS } as const;
+export const SPELL_EVENTS = {
+  ...CARD_EVENTS,
+  BEFORE_DESTROYED: 'before_destroyed',
+  AFTER_DESTROYED: 'after_destroyed'
+} as const;
 export type SpellCardEvent = Values<typeof SPELL_EVENTS>;
 
 export const HERO_EVENTS = { ...CARD_EVENTS } as const;
