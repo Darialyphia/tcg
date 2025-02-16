@@ -31,6 +31,7 @@ import { assert, isDefined } from '@game/shared';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { Hero } from './hero.entity';
 import { PLAYER_EVENTS } from '../../player/player-enums';
+import { UnavailableEvolutionTributeRequirementsError } from '../card-errors';
 
 export type SerializedEvolution = SerializedCard & {
   atk: number;
@@ -231,35 +232,55 @@ export class Evolution extends Card<
     this.checkHp({ source });
   }
 
+  get hasMetTributesRequirements() {
+    const creatures = this.player.boardSide.getAllCreatures();
+    const creaturesWithSameJob = creatures.filter(
+      card =>
+        (card instanceof Creature || card instanceof Evolution) && card.job === this.job
+    );
+    if (!creaturesWithSameJob.length) return false;
+
+    const leastExpensiveMatch = creaturesWithSameJob.sort(
+      (a, b) => a.manaCost - b.manaCost
+    )[0];
+
+    const remainingCandidates: Array<Creature | Evolution> = [
+      ...creatures,
+      ...this.player.hand.filter(card => card instanceof Creature)
+    ].filter(card => !card.equals(leastExpensiveMatch));
+
+    return (
+      remainingCandidates.reduce(
+        (acc, card) => acc + card.manaCost,
+        leastExpensiveMatch.manaCost
+      ) >= this.manaCost
+    );
+  }
+
   private selectTributes(onComplete: (targets: Array<Creature | Evolution>) => void) {
     this.game.interaction.startSelectingTargets<'card'>({
       getNextTarget: targets => {
-        if (targets.length === 0) {
-          return {
-            type: 'card',
-            isElligible: card => {
+        return {
+          type: 'card',
+          isElligible: card => {
+            if (targets.length === 0) {
               if (!card.player.equals(this.player)) return false;
               if (!(card instanceof Creature || card instanceof Evolution)) return false;
               if (!card.position) return false;
               return card.job === this.job;
+            } else {
+              if (!card.player.equals(this.player)) return false;
+              if (!(card instanceof Creature || card instanceof Evolution)) return false;
+              const isInHand = card.player.hand.some(card => card.equals(card));
+              if (!card.position || !isInHand) return false;
+              const remainingCost =
+                this.manaCost -
+                targets.reduce(
+                  (acc, target) => acc + (target.card as Creature | Evolution).manaCost,
+                  0
+                );
+              return card.manaCost <= remainingCost;
             }
-          };
-        }
-
-        return {
-          type: 'card',
-          isElligible: card => {
-            if (!card.player.equals(this.player)) return false;
-            if (!(card instanceof Creature || card instanceof Evolution)) return false;
-            const isInHand = card.player.hand.some(card => card.equals(card));
-            if (!card.position || !isInHand) return false;
-            const remainingCost =
-              this.manaCost -
-              targets.reduce(
-                (acc, target) => acc + (target.card as Creature | Evolution).manaCost,
-                0
-              );
-            return card.manaCost <= remainingCost;
           }
         };
       },
@@ -297,6 +318,10 @@ export class Evolution extends Card<
   }
 
   play() {
+    assert(
+      this.hasMetTributesRequirements,
+      new UnavailableEvolutionTributeRequirementsError()
+    );
     this.selectTributes(tributeTargets => {
       this.game.interaction.startSelectingTargets<'creatureSlot'>({
         getNextTarget: targets => {

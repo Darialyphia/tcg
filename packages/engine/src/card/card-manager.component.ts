@@ -75,8 +75,9 @@ export class CardManagerComponent {
   }
 
   play(card: DeckCard) {
-    if (!this.hand.includes(card)) return;
-    this.removeFromHand(card);
+    if (this.hand.includes(card)) {
+      this.removeFromHand(card);
+    }
     card.play();
   }
 

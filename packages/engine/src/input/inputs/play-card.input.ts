@@ -6,7 +6,11 @@ import { Spell } from '../../card/entities/spell.entity';
 import { SPELL_KINDS } from '../../card/card.enums';
 import { AlreadyPerformedManaActionError } from './input-errors';
 import { Shard } from '../../card/entities/shard.entity';
-import { CardNotFoundError } from '../../card/card-errors';
+import {
+  CardNotFoundError,
+  NonBurstSpellPlayedDuringOpponentTurnError,
+  PlayedSpellWithoutChainDuringOpponentTurnError
+} from '../../card/card-errors';
 
 const schema = defaultInputSchema.extend({
   index: z.number().nonnegative()
@@ -31,11 +35,11 @@ export class PlayCardInput extends Input<typeof schema> {
     if (!this.isActive) {
       assert(
         this.game.effectChainSystem.currentChain,
-        "Cannot play spell without an effect chain dring the opponent's turn."
+        new PlayedSpellWithoutChainDuringOpponentTurnError()
       );
       assert(
         card.spellKind === SPELL_KINDS.BURST,
-        'Cannot play non-burst spell during opponent turn.'
+        new NonBurstSpellPlayedDuringOpponentTurnError()
       );
     }
     this.player.playCardAtIndex(this.payload.index);

@@ -48,6 +48,14 @@ class BoardSide {
     this.shardZone = null;
   }
 
+  get hero() {
+    return this.heroZone.hero;
+  }
+
+  get heroEnchants() {
+    return this.heroZone.enchants;
+  }
+
   get attackZone(): CreatureZone {
     return this._attackZone;
   }

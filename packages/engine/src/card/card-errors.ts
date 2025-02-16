@@ -15,3 +15,21 @@ export class CardNotFoundError extends Error {
     super('Card not found');
   }
 }
+
+export class NonBurstSpellPlayedDuringOpponentTurnError extends Error {
+  constructor() {
+    super("Non-burst spell played during opponent's turn");
+  }
+}
+
+export class PlayedSpellWithoutChainDuringOpponentTurnError extends Error {
+  constructor() {
+    super("Played spell without chain during opponent's turn");
+  }
+}
+
+export class UnavailableEvolutionTributeRequirementsError extends Error {
+  constructor() {
+    super('You cannot meet the requirements needed to summon this evolution');
+  }
+}
