@@ -1,6 +1,13 @@
-import { type AnyObject, type EmptyObject } from '@game/shared';
+import { type AnyObject, type EmptyObject, type Nullable } from '@game/shared';
 import { System } from '../../system';
 import { type GameStarEvent, type SerializedStarEvent } from '../game.events';
+import type { SerializedHero } from '../../card/entities/hero.entity';
+import type { SerializedCreature } from '../../card/entities/creature.entity';
+import type { SerializedEvolution } from '../../card/entities/evolution.entity';
+import type { SerializedSpell } from '../../card/entities/spell.entity';
+import type { SerializedShard } from '../../card/entities/shard.entity';
+import type { SerializedCard } from '../../card/entities/card.entity';
+import type { SerializedPlayer } from '../../player/player.entity';
 
 export type GameStateSnapshot = {
   id: number;
@@ -8,8 +15,53 @@ export type GameStateSnapshot = {
   events: SerializedStarEvent[];
 };
 
+type SerializedCreatureZone = {
+  cards: [
+    Nullable<SerializedCreature | SerializedEvolution>,
+    Nullable<SerializedCreature | SerializedEvolution>,
+    Nullable<SerializedCreature | SerializedEvolution>,
+    Nullable<SerializedCreature | SerializedEvolution>,
+    Nullable<SerializedCreature | SerializedEvolution>
+  ];
+  enchants: SerializedSpell[];
+};
+type SerializedOmniscientBoardSide = {
+  hero: {
+    card: SerializedHero;
+    enchants: SerializedSpell[];
+  };
+  attackZone: SerializedCreatureZone;
+  defenseZone: SerializedCreatureZone;
+  manaZone: SerializedCard[];
+  shardZone: Nullable<SerializedShard>;
+  evolution: Nullable<SerializedEvolution>;
+};
+
+type SerializedOmniscientBoard = {
+  board: {
+    sides: [SerializedOmniscientBoardSide, SerializedOmniscientBoardSide];
+    columnEnchants: [
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>
+    ];
+  };
+};
+
+export type SerializedOmniscientState = {
+  board: SerializedOmniscientBoard;
+  elapsedTurns: number;
+  activePlayer: SerializedPlayer;
+  players: [SerializedPlayer, SerializedPlayer];
+};
+
 export class GameSnaphotSystem extends System<EmptyObject> {
-  private cache: GameStateSnapshot[] = [];
+  private caches: Record<string, GameStateSnapshot[]> = {
+    omniscient: []
+  };
+  private omniscientCache: GameStateSnapshot[] = [];
 
   private eventsSinceLastSnapshot: GameStarEvent[] = [];
 
@@ -20,13 +72,15 @@ export class GameSnaphotSystem extends System<EmptyObject> {
     this.game.on('*', event => {
       this.eventsSinceLastSnapshot.push(event);
     });
+    this.caches[this.game.playerSystem.player1.id] = [];
+    this.caches[this.game.playerSystem.player2.id] = [];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   shutdown() {}
 
-  getSnapshotAt(index: number): GameStateSnapshot {
-    const snapshot = this.cache[index];
+  getOmniscientSnapshotAt(index: number): GameStateSnapshot {
+    const snapshot = this.omniscientCache[index];
     if (!snapshot) {
       throw new Error(`Gamestate snapshot unavailable for index ${index}`);
     }
@@ -34,19 +88,52 @@ export class GameSnaphotSystem extends System<EmptyObject> {
     return snapshot;
   }
 
-  getLatestSnapshot(): GameStateSnapshot {
-    return this.getSnapshotAt(this.nextId);
+  geSnapshotForPlayerAt(playerId: string, index: number): GameStateSnapshot {
+    const snapshot = this.caches[playerId][index];
+    if (!snapshot) {
+      throw new Error(`Gamestate snapshot unavailable for index ${index}`);
+    }
+
+    return snapshot;
+  }
+
+  getLatestOmniscientSnapshot(): GameStateSnapshot {
+    return this.getOmniscientSnapshotAt(this.nextId);
+  }
+
+  getLatestSnapshotForPlayer(playerId: string): GameStateSnapshot {
+    return this.geSnapshotForPlayerAt(playerId, this.nextId);
+  }
+
+  serializeOmniscientState() {
+    return {};
+  }
+
+  serializePlayerState(playerId: string) {
+    return {};
   }
 
   makeSnapshot() {
-    const snapshot: GameStateSnapshot = {
-      id: this.nextId++,
-      state: {},
-      events: this.eventsSinceLastSnapshot.map(event => event.serialize())
-    };
+    const events = this.eventsSinceLastSnapshot.map(event => event.serialize());
+    const id = this.nextId++;
+    this.caches[this.game.playerSystem.player1.id].push({
+      id,
+      events,
+      state: this.serializePlayerState(this.game.playerSystem.player1.id)
+    });
 
-    this.cache.push(snapshot);
+    this.caches[this.game.playerSystem.player2.id].push({
+      id,
+      events,
+      state: this.serializePlayerState(this.game.playerSystem.player2.id)
+    });
+
+    this.omniscientCache.push({
+      id,
+      events,
+      state: this.serializeOmniscientState()
+    });
+
     this.eventsSinceLastSnapshot = [];
-    return snapshot;
   }
 }

@@ -234,9 +234,15 @@ export class Creature extends Card<
     const chain = this.game.effectChainSystem.currentChain;
 
     this.selectAbilityTargets(ability, targets => {
-      chain.addEffect(() => {
-        this.resolveAbility(this.blueprint.abilities[index], targets);
-      }, this.player);
+      chain.addEffect(
+        {
+          source: this,
+          handler: () => {
+            this.resolveAbility(this.blueprint.abilities[index], targets);
+          }
+        },
+        this.player
+      );
     });
   }
 
@@ -251,9 +257,15 @@ export class Creature extends Card<
 
     this.selectAbilityTargets(ability, targets => {
       this.game.effectChainSystem.createChain(this.player, () => {});
-      this.game.effectChainSystem.start(() => {
-        this.resolveAbility(this.blueprint.abilities[index], targets);
-      }, this.player);
+      this.game.effectChainSystem.start(
+        {
+          source: this,
+          handler: () => {
+            this.resolveAbility(this.blueprint.abilities[index], targets);
+          }
+        },
+        this.player
+      );
     });
   }
 

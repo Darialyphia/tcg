@@ -1,6 +1,7 @@
 import { assert, StateMachine, transition, type Values } from '@game/shared';
 import type { Game } from './game';
 import type { Player } from '../player/player.entity';
+import type { AnyCard } from '../card/entities/card.entity';
 
 const EFFECT_CHAIN_STATES = {
   IDLE: 'IDLE',
@@ -20,7 +21,7 @@ const EFFECT_CHAIN_STATE_EVENTS = {
 } as const;
 type EffectChainEvent = Values<typeof EFFECT_CHAIN_STATE_EVENTS>;
 
-export type Effect = (game: Game) => void; // Represents an in-game effect
+export type Effect = { source: AnyCard; handler: (game: Game) => void };
 
 export class EffectChain extends StateMachine<EffectChainState, EffectChainEvent> {
   private effectStack: Effect[] = [];
@@ -96,7 +97,7 @@ export class EffectChain extends StateMachine<EffectChainState, EffectChainEvent
   private resolveEffects(): void {
     while (this.effectStack.length > 0) {
       const effect = this.effectStack.pop();
-      if (effect) effect(this.game);
+      if (effect) effect.handler(this.game);
     }
     this.dispatch(EFFECT_CHAIN_STATE_EVENTS.END);
   }

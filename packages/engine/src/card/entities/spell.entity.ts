@@ -113,14 +113,26 @@ export class Spell extends Card<
       } else if (
         this.game.interaction.context.state === INTERACTION_STATES.RESPOND_TO_ATTACK
       ) {
-        this.game.interaction.startChain(() => {
-          this.doPlay(targets);
-        }, this.player);
+        this.game.interaction.startChain(
+          {
+            source: this,
+            handler: () => {
+              this.doPlay(targets);
+            }
+          },
+          this.player
+        );
       } else {
         this.game.effectChainSystem.createChain(this.player, () => {});
-        this.game.effectChainSystem.start(() => {
-          this.doPlay(targets);
-        }, this.player);
+        this.game.effectChainSystem.start(
+          {
+            source: this,
+            handler: () => {
+              this.doPlay(targets);
+            }
+          },
+          this.player
+        );
       }
     });
   }
@@ -132,9 +144,15 @@ export class Spell extends Card<
       'Only Burst spells can be added to the chain'
     );
     const chain = this.game.effectChainSystem.currentChain;
-    chain.addEffect(() => {
-      this.doPlay(targets);
-    }, this.player);
+    chain.addEffect(
+      {
+        source: this,
+        handler: () => {
+          this.doPlay(targets);
+        }
+      },
+      this.player
+    );
   }
 
   get canDestroy() {

@@ -18,7 +18,9 @@ export class GameSession {
     this.game = new Game({
       id: options.id ?? 'GAME_SESSION',
       rngSeed: options.rngSeed,
-      configOverrides: options.configOverrides ?? {}
+      configOverrides: options.configOverrides ?? {},
+      players: options.players,
+      cardPool: options.cardPool
     });
   }
 
@@ -26,9 +28,13 @@ export class GameSession {
     return this.game.initialize();
   }
 
-  subscribe(cb: (snapshot: GameStateSnapshot) => void) {
+  subscribe(playerId: string | null, cb: (snapshot: GameStateSnapshot) => void) {
     this.game.on(GAME_EVENTS.FLUSHED, () => {
-      cb(this.game.serializer.getLatestSnapshot());
+      if (playerId) {
+        cb(this.game.serializer.getLatestSnapshotForPlayer(playerId));
+      } else {
+        cb(this.game.serializer.getLatestOmniscientSnapshot());
+      }
     });
   }
 

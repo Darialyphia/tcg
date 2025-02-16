@@ -368,11 +368,17 @@ export class Evolution extends Card<
     assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
     const ability = this.blueprint.abilities[index];
     assert(isDefined(ability), 'Ability not found');
-    this.game.effectChainSystem.currentChain.addEffect(() => {
-      this.selectAbilityTargets(ability, targets => {
-        this.resolveAbility(this.blueprint.abilities[index], targets);
-      });
-    }, this.player);
+    this.game.effectChainSystem.currentChain.addEffect(
+      {
+        source: this,
+        handler: () => {
+          this.selectAbilityTargets(ability, targets => {
+            this.resolveAbility(this.blueprint.abilities[index], targets);
+          });
+        }
+      },
+      this.player
+    );
   }
 
   selectAbilityTargets(
@@ -402,9 +408,15 @@ export class Evolution extends Card<
 
     this.selectAbilityTargets(ability, targets => {
       this.game.effectChainSystem.createChain(this.player, () => {});
-      this.game.effectChainSystem.start(() => {
-        this.resolveAbility(this.blueprint.abilities[index], targets);
-      }, this.player);
+      this.game.effectChainSystem.start(
+        {
+          source: this,
+          handler: () => {
+            this.resolveAbility(this.blueprint.abilities[index], targets);
+          }
+        },
+        this.player
+      );
     });
   }
 

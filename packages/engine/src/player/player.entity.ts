@@ -28,6 +28,9 @@ import { CardManagerComponent } from '../card/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
 import type { Evolution } from '../card/entities/evolution.entity';
 import { CARD_KINDS } from '../card/card.enums';
+import type { SerializedSpell } from '../card/entities/spell.entity';
+import type { SerializedShard } from '../card/entities/shard.entity';
+import type { SerializedCreature } from '../card/entities/creature.entity';
 
 export type PlayerOptions = {
   id: string;
@@ -42,6 +45,7 @@ export type PlayerOptions = {
 export type SerializedPlayer = {
   id: string;
   name: string;
+  hand: Array<SerializedCreature | SerializedSpell | SerializedShard>;
 };
 
 export class Player
@@ -88,7 +92,8 @@ export class Player
   serialize() {
     return {
       id: this.id,
-      name: this.options.name
+      name: this.options.name,
+      hand: this.hand.map(card => card.serialize())
     };
   }
 

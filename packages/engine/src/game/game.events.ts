@@ -92,7 +92,7 @@ export class GameInputStartEvent extends TypedEvent<
   SerializedInput
 > {
   serialize() {
-    return this.data.input.serialize();
+    return this.data.input.serialize() as SerializedInput;
   }
 }
 
