@@ -146,8 +146,50 @@ export class GameSnaphotSystem extends System<EmptyObject> {
     return this.geSnapshotForPlayerAt(playerId, this.nextId);
   }
 
-  serializeOmniscientState() {
-    return {} as SerializedOmniscientState;
+  serializeOmniscientState(): SerializedOmniscientState {
+    return {
+      board: {
+        sides: this.game.board.sides.map(side => {
+          return {
+            hero: {
+              card: side.hero.serialize(),
+              enchants: side.hero.enchants.map(enchant => enchant.serialize())
+            },
+            attackZone: {
+              cards: side.attackZone.slots.map(creature =>
+                creature ? creature.serialize() : null
+              ),
+              enchants: side.attackZone.enchants.map(enchant => enchant.serialize())
+            },
+            defenseZone: {
+              cards: side.defenseZone.slots.map(creature =>
+                creature ? creature.serialize() : null
+              ),
+              enchants: side.defenseZone.enchants.map(enchant => enchant.serialize())
+            },
+            manaZone: side.manaZone.map(card => card.serialize()),
+            shardZone: side.shardZone ? side.shardZone.serialize() : null,
+            evolution: side.evolution.map(evolution => evolution.serialize()),
+            hand: side.hand.map(card => card.serialize()),
+            deck: {
+              total: side.deck.total,
+              remaining: side.deck.remaining
+            }
+          };
+        }),
+        columnEnchants: this.game.boardSystem.columnEnchants.map(enchant =>
+          enchant ? enchant.serialize() : null
+        )
+      },
+      elapsedTurns: this.game.turnSystem.elapsedTurns,
+      activePlayer: this.game.turnSystem.activePlayer.serialize(),
+      players: this.game.playerSystem.players.map(player => player.serialize()) as [
+        SerializedPlayer,
+        SerializedPlayer
+      ],
+      interactionState: this.game.interaction.serialize(),
+      effectChain: this.game.effectChainSystem.currentChain?.serialize() ?? null
+    };
   }
 
   serializePlayerState(playerId: string) {
