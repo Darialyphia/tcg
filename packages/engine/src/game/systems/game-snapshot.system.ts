@@ -1,15 +1,15 @@
-import { type AnyObject, type EmptyObject, type Nullable } from '@game/shared';
+import {
+  type AnyObject,
+  type EmptyObject,
+  type Nullable,
+  type Override
+} from '@game/shared';
 import { System } from '../../system';
 import { type GameStarEvent, type SerializedStarEvent } from '../game.events';
-import type { SerializedHero } from '../../card/entities/hero.entity';
-import type { SerializedCreature } from '../../card/entities/creature.entity';
-import type { SerializedEvolution } from '../../card/entities/evolution.entity';
-import type { SerializedSpell } from '../../card/entities/spell.entity';
-import type { SerializedShard } from '../../card/entities/shard.entity';
-import type { SerializedCard } from '../../card/entities/card.entity';
 import type { SerializedPlayer } from '../../player/player.entity';
 import type { SerialiedInteractionStateContext } from './interaction.system';
 import type { SerializedEffectChain } from '../effect-chain';
+import type { SerializedBoard, SerializedBoardSide } from './game-board.system';
 
 export type GameStateSnapshot = {
   id: number;
@@ -17,71 +17,13 @@ export type GameStateSnapshot = {
   events: SerializedStarEvent[];
 };
 
-type SerializedCreatureZone = {
-  cards: [
-    Nullable<SerializedCreature | SerializedEvolution>,
-    Nullable<SerializedCreature | SerializedEvolution>,
-    Nullable<SerializedCreature | SerializedEvolution>,
-    Nullable<SerializedCreature | SerializedEvolution>,
-    Nullable<SerializedCreature | SerializedEvolution>
-  ];
-  enchants: SerializedSpell[];
-};
-type SerializedOmniscientBoardSide = {
-  hero: {
-    card: SerializedHero;
-    enchants: SerializedSpell[];
-  };
-  attackZone: SerializedCreatureZone;
-  defenseZone: SerializedCreatureZone;
-  manaZone: SerializedCard[];
-  shardZone: Nullable<SerializedShard>;
-  evolution: Array<SerializedEvolution>;
-  hand: Array<SerializedCreature | SerializedSpell | SerializedShard>;
-  deck: { total: number; remaining: number };
-};
-type SerializedHiddenBoardSide = {
-  hero: {
-    card: SerializedHero;
-    enchants: SerializedSpell[];
-  };
-  attackZone: SerializedCreatureZone;
-  defenseZone: SerializedCreatureZone;
-  manaZone: SerializedCard[];
-  shardZone: Nullable<SerializedShard>;
-  evolution: number;
-  hand: number;
-  deck: { total: number; remaining: number };
-};
-
-type SerializedOmniscientBoard = {
-  board: {
-    sides: [SerializedOmniscientBoardSide, SerializedOmniscientBoardSide];
-    columnEnchants: [
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>
-    ];
-  };
-};
-
-type SerializedPlayerBoard = {
-  board: {
-    sides: [SerializedOmniscientBoardSide, SerializedHiddenBoardSide];
-    columnEnchants: [
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>,
-      Nullable<SerializedSpell>
-    ];
-  };
-};
+type SerializedHiddenBoardSide = Override<
+  SerializedBoardSide,
+  { evolution: number; hand: number }
+>;
 
 export type SerializedOmniscientState = {
-  board: SerializedOmniscientBoard;
+  board: SerializedBoard;
   elapsedTurns: number;
   activePlayer: SerializedPlayer;
   players: [SerializedPlayer, SerializedPlayer];
@@ -90,7 +32,10 @@ export type SerializedOmniscientState = {
 };
 
 export type SerializedPlayerState = {
-  board: SerializedPlayerBoard;
+  board: Override<
+    SerializedBoard,
+    { sides: [SerializedBoardSide, SerializedHiddenBoardSide] }
+  >;
   elapsedTurns: number;
   activePlayer: SerializedPlayer;
   players: [SerializedPlayer, SerializedPlayer];
@@ -148,39 +93,7 @@ export class GameSnaphotSystem extends System<EmptyObject> {
 
   serializeOmniscientState(): SerializedOmniscientState {
     return {
-      board: {
-        sides: this.game.board.sides.map(side => {
-          return {
-            hero: {
-              card: side.hero.serialize(),
-              enchants: side.hero.enchants.map(enchant => enchant.serialize())
-            },
-            attackZone: {
-              cards: side.attackZone.slots.map(creature =>
-                creature ? creature.serialize() : null
-              ),
-              enchants: side.attackZone.enchants.map(enchant => enchant.serialize())
-            },
-            defenseZone: {
-              cards: side.defenseZone.slots.map(creature =>
-                creature ? creature.serialize() : null
-              ),
-              enchants: side.defenseZone.enchants.map(enchant => enchant.serialize())
-            },
-            manaZone: side.manaZone.map(card => card.serialize()),
-            shardZone: side.shardZone ? side.shardZone.serialize() : null,
-            evolution: side.evolution.map(evolution => evolution.serialize()),
-            hand: side.hand.map(card => card.serialize()),
-            deck: {
-              total: side.deck.total,
-              remaining: side.deck.remaining
-            }
-          };
-        }),
-        columnEnchants: this.game.boardSystem.columnEnchants.map(enchant =>
-          enchant ? enchant.serialize() : null
-        )
-      },
+      board: this.game.board.serialize(),
       elapsedTurns: this.game.turnSystem.elapsedTurns,
       activePlayer: this.game.turnSystem.activePlayer.serialize(),
       players: this.game.playerSystem.players.map(player => player.serialize()) as [
@@ -192,8 +105,30 @@ export class GameSnaphotSystem extends System<EmptyObject> {
     };
   }
 
-  serializePlayerState(playerId: string) {
-    return {} as SerializedPlayerState;
+  serializePlayerState(playerId: string): SerializedPlayerState {
+    const serialized = this.serializeOmniscientState();
+    return {
+      ...serialized,
+      board: {
+        ...serialized.board,
+        sides: serialized.board.sides
+          .map(side => {
+            if (side.playerId === playerId) {
+              return side;
+            }
+
+            return {
+              ...side,
+              evolution: side.evolution.length,
+              hand: side.hand.length
+            };
+          })
+          .sort(a => (a.playerId === playerId ? -1 : 1)) as [
+          SerializedBoardSide,
+          SerializedHiddenBoardSide
+        ]
+      }
+    };
   }
 
   makeSnapshot() {

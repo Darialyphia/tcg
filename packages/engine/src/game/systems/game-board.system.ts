@@ -46,7 +46,7 @@ type SerializedCreatureZone = {
   enchants: SerializedSpell[];
 };
 
-type SerializedBoardSide = {
+export type SerializedBoardSide = {
   playerId: string;
   hero: {
     card: SerializedHero;
