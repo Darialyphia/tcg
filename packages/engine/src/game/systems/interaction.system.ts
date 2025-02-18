@@ -1,6 +1,7 @@
 import {
   type EmptyObject,
   type Nullable,
+  type Serializable,
   type Values,
   assert,
   isDefined,
@@ -8,12 +9,15 @@ import {
   transition
 } from '@game/shared';
 import type { CreatureSlot } from './game-board.system';
-import type { AnyCard } from '../../card/entities/card.entity';
-import type { Player } from '../../player/player.entity';
+import type { AnyCard, SerializedCard } from '../../card/entities/card.entity';
+import type { Player, SerializedPlayer } from '../../player/player.entity';
 import { System } from '../../system';
 import type { Effect } from '../effect-chain';
 import type { Attacker, Blocker, Defender } from '../../combat/damage';
 import { match } from 'ts-pattern';
+import type { SerializedCreature } from '../../card/entities/creature.entity';
+import type { SerializedEvolution } from '../../card/entities/evolution.entity';
+import type { SerializedHero } from '../../card/entities/hero.entity';
 
 export const INTERACTION_STATES = {
   IDLE: 'idle',
@@ -50,7 +54,11 @@ export type EffectTarget =
     }
   | {
       type: 'creatureSlot';
-      isElligible: (opts: { zone: 'attack' | 'defense'; slot: CreatureSlot }) => boolean;
+      isElligible: (opts: {
+        zone: 'attack' | 'defense';
+        slot: CreatureSlot;
+        playerId: string;
+      }) => boolean;
     }
   | {
       type: 'row';
@@ -61,12 +69,38 @@ export type EffectTarget =
       isElligible: (opts: { slot: CreatureSlot }) => boolean;
     };
 
+export type SerializedTarget =
+  | {
+      type: 'card';
+      card: SerializedCard;
+    }
+  | {
+      type: 'creatureSlot';
+      zone: 'attack' | 'defense';
+      slot: CreatureSlot;
+      playerId: string;
+    }
+  | {
+      type: 'row';
+      zone: 'attack' | 'defense';
+      playerId: string;
+    }
+  | {
+      type: 'column';
+      slot: CreatureSlot;
+    };
+
 export type SelectedTarget =
   | {
       type: 'card';
       card: AnyCard;
     }
-  | { type: 'creatureSlot'; slot: CreatureSlot; zone: 'attack' | 'defense' }
+  | {
+      type: 'creatureSlot';
+      slot: CreatureSlot;
+      zone: 'attack' | 'defense';
+      player: Player;
+    }
   | { type: 'row'; zone: 'attack' | 'defense'; player: Player }
   | { type: 'column'; slot: CreatureSlot };
 
@@ -115,7 +149,52 @@ export type InteractionStateContext =
       };
     };
 
-export class InteractionSystem extends System<never> {
+export type SerialiedInteractionStateContext =
+  | {
+      state: typeof INTERACTION_STATES.IDLE;
+      ctx: EmptyObject;
+    }
+  | {
+      state: typeof INTERACTION_STATES.RESPOND_TO_END_TURN;
+      ctx: EmptyObject;
+    }
+  | {
+      state: typeof INTERACTION_STATES.SELECTING_CARD_TARGETS;
+      ctx: {
+        canCommit: boolean;
+        elligibleTargets: Array<SerializedTarget>;
+        selectedTargets: Array<SerializedTarget>;
+      };
+    }
+  | {
+      state: typeof INTERACTION_STATES.SELECTING_CARDS;
+      ctx: {
+        choices: SerializedCard[];
+        minChoices: number;
+        maxChoices: number;
+      };
+    }
+  | {
+      state: typeof INTERACTION_STATES.SEARCHING_DECK;
+      ctx: {
+        player: SerializedPlayer;
+        minChoices: number;
+        maxChoices: number;
+      };
+    }
+  | {
+      state: typeof INTERACTION_STATES.RESPOND_TO_ATTACK;
+      ctx: {
+        attacker: SerializedCreature | SerializedEvolution;
+        target: SerializedCreature | SerializedEvolution | SerializedHero;
+        blocker: SerializedCreature | SerializedEvolution | null;
+      };
+    };
+
+export class InteractionSystem
+  extends System<never>
+  implements Serializable<SerialiedInteractionStateContext>
+{
   private stateMachine = new StateMachine<InteractionState, Interactiontransition>(
     INTERACTION_STATES.IDLE,
     [
@@ -568,6 +647,112 @@ export class InteractionSystem extends System<never> {
     };
 
     this.game.turnSystem.activePlayer.endTurn();
+  }
+
+  serialize(): SerialiedInteractionStateContext {
+    return {
+      state: this._context.state,
+      ctx: match(this._context)
+        .with({ state: 'idle' }, () => ({}))
+        .with({ state: 'respond-to-end-turn' }, () => ({}))
+        .with({ state: 'selecting-card-targets' }, ({ ctx }) => {
+          const nextTarget = ctx.getNextTarget(ctx.selectedTargets);
+          return {
+            canCommit: ctx.canCommit,
+            elligibleTargets: match(nextTarget)
+              .with({ type: 'card' }, ({ isElligible }) =>
+                this.game.board
+                  .getAllCardsInPlay()
+                  .filter(card => isElligible(card))
+                  .map(card => ({ type: 'card', card: card.serialize() }))
+              )
+              .with({ type: 'creatureSlot' }, ({ isElligible }) => {
+                const result: Array<{
+                  type: 'creatureSlot';
+                  slot: CreatureSlot;
+                  zone: 'attack' | 'defense';
+                  playerId: string;
+                }> = [];
+                this.game.playerSystem.players.forEach(player => {
+                  (['attack', 'defense'] as const).forEach(zone => {
+                    for (let i = 0; i < 5; i++) {
+                      const slot = i as CreatureSlot;
+                      const elligible = isElligible({
+                        slot,
+                        zone,
+                        playerId: player.id
+                      });
+                      if (!elligible) continue;
+
+                      result.push({
+                        type: 'creatureSlot',
+                        slot,
+                        zone,
+                        playerId: player.id
+                      });
+                    }
+                  });
+                });
+                return result;
+              })
+              .with({ type: 'row' }, ({ isElligible }) => {
+                return this.game.playerSystem.players.flatMap(player => {
+                  return (['attack', 'defense'] as const).flatMap(zone => {
+                    const elligible = isElligible({ zone, playerId: player.id });
+                    if (!elligible) return [];
+                    return [{ type: 'row', zone, playerId: player.id }];
+                  });
+                });
+              })
+              .with({ type: 'column' }, ({ isElligible }) => {
+                return ([0, 1, 2, 3, 4] as const)
+                  .map(slot => {
+                    const elligible = isElligible({ slot });
+                    if (!elligible) return null;
+                    return { type: 'column', slot };
+                  })
+                  .filter(isDefined);
+              })
+              .with(null, () => [])
+              .exhaustive(),
+            selectedTargets: ctx.selectedTargets.map(target => {
+              return match(target)
+                .with({ type: 'card' }, ({ card }) => ({
+                  type: 'card',
+                  card: card.serialize()
+                }))
+                .with({ type: 'creatureSlot' }, ({ slot, zone, player }) => ({
+                  type: 'creatureSlot',
+                  slot,
+                  zone,
+                  playerId: player.id
+                }))
+                .with({ type: 'row' }, ({ zone, player }) => ({
+                  type: 'row',
+                  zone,
+                  playerId: player.id
+                }))
+                .with({ type: 'column' }, ({ slot }) => ({ type: 'column', slot }));
+            })
+          };
+        })
+        .with({ state: 'selecting-cards' }, ({ ctx }) => ({
+          choices: ctx.choices.map(card => card.serialize()),
+          minChoices: ctx.minChoices,
+          maxChoices: ctx.maxChoices
+        }))
+        .with({ state: 'searching-deck' }, ({ ctx }) => ({
+          player: ctx.player.serialize(),
+          minChoices: ctx.minChoices,
+          maxChoices: ctx.maxChoices
+        }))
+        .with({ state: 'respond-to-attack' }, ({ ctx }) => ({
+          attacker: ctx.attacker.serialize(),
+          target: ctx.target.serialize(),
+          blocker: ctx.blocker?.serialize() ?? null
+        }))
+        .exhaustive()
+    } as SerialiedInteractionStateContext;
   }
 }
 

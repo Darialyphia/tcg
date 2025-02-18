@@ -236,6 +236,10 @@ export class GameBoardSystem extends System<never> {
   }
 
   shutdown() {}
+
+  getAllCardsInPlay(): AnyCard[] {
+    return this.sides.flatMap(side => side.getAllCardsInPlay());
+  }
 }
 
 export class CreatureSlotAlreadyOccupiedError extends Error {

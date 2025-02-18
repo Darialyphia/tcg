@@ -8,6 +8,8 @@ import type { SerializedSpell } from '../../card/entities/spell.entity';
 import type { SerializedShard } from '../../card/entities/shard.entity';
 import type { SerializedCard } from '../../card/entities/card.entity';
 import type { SerializedPlayer } from '../../player/player.entity';
+import type { SerialiedInteractionStateContext } from './interaction.system';
+import type { SerializedEffectChain } from '../effect-chain';
 
 export type GameStateSnapshot = {
   id: number;
@@ -34,7 +36,22 @@ type SerializedOmniscientBoardSide = {
   defenseZone: SerializedCreatureZone;
   manaZone: SerializedCard[];
   shardZone: Nullable<SerializedShard>;
-  evolution: Nullable<SerializedEvolution>;
+  evolution: Array<SerializedEvolution>;
+  hand: Array<SerializedCreature | SerializedSpell | SerializedShard>;
+  deck: { total: number; remaining: number };
+};
+type SerializedHiddenBoardSide = {
+  hero: {
+    card: SerializedHero;
+    enchants: SerializedSpell[];
+  };
+  attackZone: SerializedCreatureZone;
+  defenseZone: SerializedCreatureZone;
+  manaZone: SerializedCard[];
+  shardZone: Nullable<SerializedShard>;
+  evolution: number;
+  hand: number;
+  deck: { total: number; remaining: number };
 };
 
 type SerializedOmniscientBoard = {
@@ -50,11 +67,35 @@ type SerializedOmniscientBoard = {
   };
 };
 
+type SerializedPlayerBoard = {
+  board: {
+    sides: [SerializedOmniscientBoardSide, SerializedHiddenBoardSide];
+    columnEnchants: [
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>,
+      Nullable<SerializedSpell>
+    ];
+  };
+};
+
 export type SerializedOmniscientState = {
   board: SerializedOmniscientBoard;
   elapsedTurns: number;
   activePlayer: SerializedPlayer;
   players: [SerializedPlayer, SerializedPlayer];
+  interactionState: SerialiedInteractionStateContext;
+  effectChain: SerializedEffectChain | null;
+};
+
+export type SerializedPlayerState = {
+  board: SerializedPlayerBoard;
+  elapsedTurns: number;
+  activePlayer: SerializedPlayer;
+  players: [SerializedPlayer, SerializedPlayer];
+  interactionState: SerialiedInteractionStateContext;
+  effectChain: SerializedEffectChain | null;
 };
 
 export class GameSnaphotSystem extends System<EmptyObject> {
@@ -106,11 +147,11 @@ export class GameSnaphotSystem extends System<EmptyObject> {
   }
 
   serializeOmniscientState() {
-    return {};
+    return {} as SerializedOmniscientState;
   }
 
   serializePlayerState(playerId: string) {
-    return {};
+    return {} as SerializedPlayerState;
   }
 
   makeSnapshot() {

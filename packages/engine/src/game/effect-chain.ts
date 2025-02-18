@@ -1,7 +1,13 @@
-import { assert, StateMachine, transition, type Values } from '@game/shared';
+import {
+  assert,
+  StateMachine,
+  transition,
+  type Serializable,
+  type Values
+} from '@game/shared';
 import type { Game } from './game';
 import type { Player } from '../player/player.entity';
-import type { AnyCard } from '../card/entities/card.entity';
+import type { AnyCard, SerializedCard } from '../card/entities/card.entity';
 
 const EFFECT_CHAIN_STATES = {
   IDLE: 'IDLE',
@@ -23,7 +29,12 @@ type EffectChainEvent = Values<typeof EFFECT_CHAIN_STATE_EVENTS>;
 
 export type Effect = { source: AnyCard; handler: (game: Game) => void };
 
-export class EffectChain extends StateMachine<EffectChainState, EffectChainEvent> {
+export type SerializedEffectChain = SerializedCard[];
+
+export class EffectChain
+  extends StateMachine<EffectChainState, EffectChainEvent>
+  implements Serializable<SerializedEffectChain>
+{
   private effectStack: Effect[] = [];
   private consecutivePasses = 0;
   private currentPlayer: Player;
@@ -134,5 +145,9 @@ export class EffectChain extends StateMachine<EffectChainState, EffectChainEvent
     assert(player.equals(this.currentPlayer), "Not this player's turn.");
 
     this.dispatch(EFFECT_CHAIN_STATE_EVENTS.PASS);
+  }
+
+  serialize() {
+    return this.effectStack.map(effect => effect.source.serialize());
   }
 }
