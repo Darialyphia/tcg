@@ -64,7 +64,8 @@ export class AddCardTargetInput extends Input<typeof schema> {
         this.game.interaction.addCardTarget({
           type: 'creatureSlot',
           zone,
-          slot
+          slot,
+          player: this.player
         });
       })
       .exhaustive();

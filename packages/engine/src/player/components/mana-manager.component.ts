@@ -11,7 +11,7 @@ export class MnaaManagerComponent {
   }
 
   spend(amount: number) {
-    assert(this.canSpend(amount), 'Not enough gold');
+    assert(this.canSpend(amount), 'Not enough mana');
     this._amount -= amount;
   }
 

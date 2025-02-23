@@ -11,6 +11,8 @@ import { GameCardEvent } from '../../game/game.events';
 import { assert, isDefined } from '@game/shared';
 import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { PLAYER_EVENTS } from '../../player/player-enums';
+import { ModifierManager } from '../components/modifier-manager.component';
+import type { Modifier } from './modifier.entity';
 
 export type SerializedHero = SerializedCard & {
   maxHp: number;
@@ -36,6 +38,8 @@ export class Hero extends Card<
 > {
   readonly health: HealthComponent;
 
+  readonly modifierManager: ModifierManager<Hero>;
+
   private _isExhausted = false;
 
   constructor(game: Game, player: Player, options: CardOptions) {
@@ -43,6 +47,7 @@ export class Hero extends Card<
     this.health = new HealthComponent({
       initialValue: this.maxHp
     });
+    this.modifierManager = new ModifierManager(this);
     this.forwardListeners();
     this.player.on(PLAYER_EVENTS.START_TURN, () => {
       this._isExhausted = false;
@@ -91,9 +96,11 @@ export class Hero extends Card<
       "The ability doesn't belong to this creature"
     );
 
+    const followup = ability.getFollowup(this.game, this);
+
     this.game.interaction.startSelectingTargets({
-      getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
-      canCommit: ability.followup.canCommit,
+      getNextTarget: targets => followup.targets[targets.length] ?? null,
+      canCommit: followup.canCommit,
       onComplete
     });
   }
@@ -161,6 +168,28 @@ export class Hero extends Card<
 
   play() {}
 
+  get removeModifier() {
+    return this.modifierManager.remove.bind(this.modifierManager);
+  }
+
+  get hasModifier() {
+    return this.modifierManager.has.bind(this.modifierManager);
+  }
+
+  get getModifier() {
+    return this.modifierManager.get.bind(this.modifierManager);
+  }
+
+  get modifiers() {
+    return this.modifierManager.modifiers;
+  }
+
+  addModifier(modifier: Modifier<Hero>) {
+    this.modifierManager.add(modifier);
+
+    return () => this.removeModifier(modifier.id);
+  }
+
   forwardListeners() {
     Object.values(HERO_EVENTS).forEach(eventName => {
       this.on(eventName, event => {
@@ -181,8 +210,7 @@ export class Hero extends Card<
       kind: this.kind,
       maxHp: this.maxHp,
       rarity: this.rarity,
-      faction: this.faction?.serialize() ?? null,
-      set: this.set.serialize()
+      faction: this.faction?.serialize() ?? null
     };
   }
 }

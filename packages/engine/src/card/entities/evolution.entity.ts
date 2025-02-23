@@ -32,6 +32,8 @@ import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { Hero } from './hero.entity';
 import { PLAYER_EVENTS } from '../../player/player-enums';
 import { UnavailableEvolutionTributeRequirementsError } from '../card-errors';
+import { ModifierManager } from '../components/modifier-manager.component';
+import type { Modifier } from './modifier.entity';
 
 export type SerializedEvolution = SerializedCard & {
   atk: number;
@@ -66,6 +68,8 @@ export class Evolution extends Card<
 > {
   readonly health: HealthComponent;
 
+  readonly modifierManager: ModifierManager<Evolution>;
+
   private _isExhausted = false;
 
   constructor(game: Game, player: Player, options: CardOptions) {
@@ -73,9 +77,10 @@ export class Evolution extends Card<
     this.health = new HealthComponent({
       initialValue: this.maxHp
     });
+    this.modifierManager = new ModifierManager(this);
     this.forwardListeners();
     this.player.on(PLAYER_EVENTS.START_TURN, () => {
-      this._isExhausted = false;
+      this.ready();
     });
     this.blueprint.onInit(this.game, this);
     this.on('ADD_INTERCEPTOR', event => {
@@ -109,6 +114,10 @@ export class Evolution extends Card<
     return this.interceptors.maxHp.getValue(this.blueprint.maxHp, {});
   }
 
+  get hp() {
+    return this.health.current;
+  }
+
   get manaCost() {
     return this.interceptors.manaCost.getValue(this.blueprint.manaCost, {});
   }
@@ -140,6 +149,14 @@ export class Evolution extends Card<
     }
   }
 
+  ready() {
+    this._isExhausted = false;
+  }
+
+  exhaust() {
+    this._isExhausted = true;
+  }
+
   destroy(source: AnyCard) {
     this.emitter.emit(EVOLUTION_EVENTS.BEFORE_DESTROYED, new DestroyedEvent({ source }));
     this.player.boardSide.remove(this);
@@ -162,13 +179,13 @@ export class Evolution extends Card<
 
   declareAttack(target: Defender) {
     assert(!this._isExhausted, 'Creature is exhausted');
-    this._isExhausted = true;
+    this.exhaust();
     this.game.interaction.declareAttack(this, target);
   }
 
   declareBlocker() {
     assert(!this._isExhausted, 'Creature is exhausted');
-    this._isExhausted = true;
+    this.exhaust();
     this.game.interaction.declareBlocker(this);
   }
 
@@ -232,7 +249,7 @@ export class Evolution extends Card<
     this.checkHp({ source });
   }
 
-  get hasMetTributesRequirements() {
+  private get hasMetTributesRequirements() {
     const creatures = this.player.boardSide.getAllCreatures();
     const creaturesWithSameJob = creatures.filter(
       card =>
@@ -390,9 +407,10 @@ export class Evolution extends Card<
       "The ability doesn't belong to this creature"
     );
 
+    const followup = ability.getFollowup(this.game, this);
     this.game.interaction.startSelectingTargets({
-      getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
-      canCommit: ability.followup.canCommit,
+      getNextTarget: targets => followup.targets[targets.length] ?? null,
+      canCommit: followup.canCommit,
       onComplete
     });
   }
@@ -420,6 +438,28 @@ export class Evolution extends Card<
     });
   }
 
+  get removeModifier() {
+    return this.modifierManager.remove.bind(this.modifierManager);
+  }
+
+  get hasModifier() {
+    return this.modifierManager.has.bind(this.modifierManager);
+  }
+
+  get getModifier() {
+    return this.modifierManager.get.bind(this.modifierManager);
+  }
+
+  get modifiers() {
+    return this.modifierManager.modifiers;
+  }
+
+  addModifier(modifier: Modifier<Evolution>) {
+    this.modifierManager.add(modifier);
+
+    return () => this.removeModifier(modifier.id);
+  }
+
   forwardListeners() {
     Object.values(EVOLUTION_EVENTS).forEach(eventName => {
       this.on(eventName, event => {
@@ -443,8 +483,7 @@ export class Evolution extends Card<
       maxHp: this.maxHp,
       job: this.job,
       rarity: this.rarity,
-      faction: this.faction?.serialize() ?? null,
-      set: this.set.serialize()
+      faction: this.faction?.serialize() ?? null
     };
   }
 }

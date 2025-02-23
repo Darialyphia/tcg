@@ -84,7 +84,7 @@ describe('Spell', () => {
       })
       .build();
 
-    game.skipMulligan();
+    game.helpers.skipMulligan();
 
     return { ...game, cardPool };
   };
@@ -120,7 +120,6 @@ describe('Spell', () => {
     const spy = cardPool['test-spell-cast'].onPlay;
     expect(spy).not.toHaveBeenCalled();
     game.effectChainSystem.pass(player2);
-    game.effectChainSystem.pass(player1);
 
     expect(spy).toHaveBeenCalled();
   });
@@ -134,7 +133,6 @@ describe('Spell', () => {
     });
 
     game.effectChainSystem.pass(player2);
-    game.effectChainSystem.pass(player1);
 
     expect(player1.discardPile.size).toBe(1);
   });
@@ -146,7 +144,6 @@ describe('Spell', () => {
       player1.generateCard<SpellBlueprint>(cardPool['test-spell-burst'].id)
     );
     game.effectChainSystem.pass(player2);
-    game.effectChainSystem.pass(player1);
 
     expect(player1.discardPile.size).toBe(1);
   });
@@ -163,7 +160,6 @@ describe('Spell', () => {
       player: player1
     });
     game.effectChainSystem.pass(player2);
-    game.effectChainSystem.pass(player1);
 
     expect(player1.boardSide.attackZone.enchants.length).toBe(1);
   });
@@ -175,7 +171,6 @@ describe('Spell', () => {
       player1.generateCard<SpellBlueprint>(cardPool['test-spell-hero-enchant'].id)
     );
     game.effectChainSystem.pass(player2);
-    game.effectChainSystem.pass(player1);
 
     expect(player1.boardSide.heroEnchants.length).toBe(1);
   });
@@ -191,7 +186,6 @@ describe('Spell', () => {
       slot: 0
     });
     game.effectChainSystem.pass(player2);
-    game.effectChainSystem.pass(player1);
 
     expect(game.board.columnEnchants[0].length).toBe(1);
   });

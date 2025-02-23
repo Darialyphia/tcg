@@ -1,6 +1,7 @@
 import { assert, isDefined } from '@game/shared';
 import { Game, type GameOptions, type GamePlayer } from '../src/game/game';
 import type {
+  CardBlueprint,
   CreatureBlueprint,
   HeroBlueprint,
   ShardBlueprint,
@@ -15,6 +16,9 @@ import {
 } from '../src/card/card.enums';
 import type { Faction } from '../src/card/entities/faction.entity';
 import { GAME_EVENTS } from '../src/game/game.events';
+import type { Player } from '../src/player/player.entity';
+import type { CreatureSlot } from '../src/game/systems/game-board.system';
+import type { Creature } from '../src/card/entities/creature.entity';
 
 export const testGameBuilder = () => {
   const options: Partial<GameOptions> = {};
@@ -73,19 +77,43 @@ export const testGameBuilder = () => {
 
       return {
         game,
-        skipMulligan: () => {
-          game.dispatch({
-            type: 'mulligan',
-            payload: { indices: [], playerId: game.playerSystem.player1.id }
-          });
-          game.dispatch({
-            type: 'mulligan',
-            payload: { indices: [], playerId: game.playerSystem.player2.id }
-          });
-        },
         errors,
         player1: game.playerSystem.player1,
-        player2: game.playerSystem.player2
+        player2: game.playerSystem.player2,
+        helpers: {
+          skipMulligan: () => {
+            game.dispatch({
+              type: 'mulligan',
+              payload: { indices: [], playerId: game.playerSystem.player1.id }
+            });
+            game.dispatch({
+              type: 'mulligan',
+              payload: { indices: [], playerId: game.playerSystem.player2.id }
+            });
+          },
+          summonCreatureAndReady: (
+            player: Player,
+            options: {
+              blueprint: CreatureBlueprint;
+              zone: 'attack' | 'defense';
+              slot: CreatureSlot;
+            }
+          ): Creature => {
+            player.gainMana(options.blueprint.manaCost);
+            const card = player.generateCard<CreatureBlueprint>(options.blueprint.id);
+            player.playCard(card);
+            game.interaction.addCardTarget({
+              type: 'creatureSlot',
+              slot: options.slot,
+              zone: options.zone,
+              player
+            });
+            const creature = player.boardSide.getCreatureAt(options.zone, options.slot)!;
+            creature.ready();
+
+            return creature as Creature;
+          }
+        }
       };
     }
   };
@@ -139,6 +167,7 @@ export const makeTestCreatureBlueprint = ({
   manaCost = 1,
   maxHp = 1,
   job = CREATURE_JOB.STRIKER,
+  abilities = [],
   onPlay = () => {},
   onInit = () => {}
 }: {
@@ -150,6 +179,7 @@ export const makeTestCreatureBlueprint = ({
   job?: string;
   onPlay?: CreatureBlueprint['onPlay'];
   onInit?: CreatureBlueprint['onPlay'];
+  abilities?: CreatureBlueprint['abilities'];
 }): CreatureBlueprint => ({
   id,
   faction,
@@ -159,7 +189,7 @@ export const makeTestCreatureBlueprint = ({
   job,
   onPlay,
   onInit,
-  abilities: [],
+  abilities,
   keywords: [],
   name: 'Test Creature',
   kind: CARD_KINDS.CREATURE,

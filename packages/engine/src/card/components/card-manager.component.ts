@@ -1,10 +1,14 @@
-import type { Game } from '../game/game';
-import { type CardOptions } from './entities/card.entity';
-import type { Player } from '../player/player.entity';
-import { Deck, type DeckCard } from './entities/deck.entity';
-import { createCard } from './card.factory';
-import type { CreatureBlueprint, ShardBlueprint, SpellBlueprint } from './card-blueprint';
-import type { Evolution } from './entities/evolution.entity';
+import type { Game } from '../../game/game';
+import type { Player } from '../../player/player.entity';
+import type {
+  CreatureBlueprint,
+  SpellBlueprint,
+  ShardBlueprint
+} from '../card-blueprint';
+import { createCard } from '../card.factory';
+import type { CardOptions } from '../entities/card.entity';
+import { Deck, type DeckCard } from '../entities/deck.entity';
+import type { Evolution } from '../entities/evolution.entity';
 
 export type CardManagerComponentOptions = {
   deck: CardOptions<CreatureBlueprint | SpellBlueprint | ShardBlueprint>[];

@@ -37,7 +37,7 @@ describe('Creature', () => {
       })
       .build();
 
-    game.skipMulligan();
+    game.helpers.skipMulligan();
 
     return game;
   };

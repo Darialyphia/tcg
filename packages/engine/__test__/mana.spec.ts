@@ -36,7 +36,7 @@ const setup = () => {
       cards: Array.from({ length: 30 }, () => ({ blueprintId: 'test-creature' }))
     })
     .build();
-  game.skipMulligan();
+  game.helpers.skipMulligan();
 
   return game;
 };

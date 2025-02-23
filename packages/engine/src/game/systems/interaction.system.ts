@@ -104,6 +104,11 @@ export type SelectedTarget =
   | { type: 'row'; zone: 'attack' | 'defense'; player: Player }
   | { type: 'column'; slot: CreatureSlot };
 
+export type CardTarget = SelectedTarget & { type: 'card' };
+export type CreatureSlotTarget = SelectedTarget & { type: 'creatureSlot' };
+export type RowTarget = SelectedTarget & { type: 'row' };
+export type ColumnTarget = SelectedTarget & { type: 'column' };
+
 export type InteractionStateContext =
   | {
       state: typeof INTERACTION_STATES.IDLE;

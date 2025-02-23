@@ -11,6 +11,9 @@ export type inferInterceptor<T> =
 export type inferInterceptorValue<T> =
   T extends Interceptable<infer Value> ? Value : never;
 
+export type inferInterceptorCtx<T> =
+  T extends Interceptable<any, infer Ctx> ? Ctx : never;
+
 export class Interceptable<TValue, TContext extends AnyObject = Record<string, never>> {
   listeners: { interceptor: Interceptor<TValue, TContext>; priority: number }[] = [];
 

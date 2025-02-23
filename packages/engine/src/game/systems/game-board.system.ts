@@ -133,6 +133,20 @@ class BoardSide implements Serializable<SerializedBoardSide> {
     return null;
   }
 
+  getZoneFor(card: Creature | Evolution) {
+    const isInAttack = this.attackZone.slots.some(creature => creature?.equals(card));
+    if (isInAttack) {
+      return 'attack' as const;
+    }
+
+    const isInDefense = this.defenseZone.slots.some(creature => creature?.equals(card));
+    if (isInDefense) {
+      return 'defense' as const;
+    }
+
+    return null;
+  }
+
   getCreatureAt(
     zone: 'attack' | 'defense',
     slot: CreatureSlot

@@ -6,8 +6,7 @@ import type { CardBlueprint } from '../card-blueprint';
 import type { CARD_EVENTS, CardKind, Rarity } from '../card.enums';
 import type { CardAfterPlayEvent, CardBeforePlayEvent } from '../card.events';
 import type { SerializedFaction } from './faction.entity';
-import type { SerializedCardSet } from './card-set.entity';
-import { CARD_SET_DICTIONARY } from '../sets';
+import { KeywordManagerComponent } from '../components/keyword-manager;component';
 
 export type CardOptions<T extends CardBlueprint = CardBlueprint> = {
   id: string;
@@ -27,7 +26,6 @@ export type SerializedCard = {
   description: string;
   name: string;
   kind: CardKind;
-  set: SerializedCardSet;
   rarity: Rarity;
   faction: SerializedFaction | null;
 };
@@ -42,6 +40,8 @@ export abstract class Card<
 
   protected blueprint: TBlueprint;
 
+  readonly keywordManager: KeywordManagerComponent;
+
   readonly player: Player;
 
   constructor(
@@ -55,6 +55,7 @@ export abstract class Card<
     this.player = player;
     // @ts-expect-error
     this.blueprint = options.blueprint;
+    this.keywordManager = new KeywordManagerComponent();
   }
 
   get blueprintId() {
@@ -85,8 +86,12 @@ export abstract class Card<
     return this.blueprint.faction;
   }
 
-  get set() {
-    return CARD_SET_DICTIONARY[this.blueprint.setId];
+  get addKeyword() {
+    return this.keywordManager.add.bind(this.keywordManager);
+  }
+
+  get removeKeyword() {
+    return this.keywordManager.remove.bind(this.keywordManager);
   }
 
   abstract play(): void;

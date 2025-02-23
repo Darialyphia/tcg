@@ -24,10 +24,10 @@ import type {
   ShardBlueprint,
   SpellBlueprint
 } from '../card/card-blueprint';
-import { CardManagerComponent } from '../card/card-manager.component';
+import { CardManagerComponent } from '../card/components/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
 import type { Evolution } from '../card/entities/evolution.entity';
-import { CARD_KINDS } from '../card/card.enums';
+import { CARD_EVENTS, CARD_KINDS } from '../card/card.enums';
 import type { SerializedSpell } from '../card/entities/spell.entity';
 import type { SerializedShard } from '../card/entities/shard.entity';
 import type { SerializedCreature } from '../card/entities/creature.entity';
@@ -258,7 +258,12 @@ export class Player
 
   playCard(card: DeckCard) {
     this.emitter.emit(PLAYER_EVENTS.BEFORE_PLAY_CARD, new PlayCardEvent({ card }));
-    this.currentlyPlayedCard = card;
+    (card as AnyCard).once(CARD_EVENTS.BEFORE_PLAY, () => {
+      this.currentlyPlayedCard = card;
+    });
+    (card as AnyCard).once(CARD_EVENTS.AFTER_PLAY, () => {
+      this.currentlyPlayedCard = null;
+    });
     this.cards.play(card);
     this.currentlyPlayedCard = null;
     if (card.kind === CARD_KINDS.SHARD) {

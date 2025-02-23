@@ -11,6 +11,8 @@ import type { Player } from '../../player/player.entity';
 import { GameCardEvent } from '../../game/game.events';
 import { SHARD_EVENTS } from '../card.enums';
 import { LoyaltyDamage } from '../../combat/damage';
+import { ModifierManager } from '../components/modifier-manager.component';
+import type { Modifier } from './modifier.entity';
 
 export type SerializedShard = SerializedCard;
 
@@ -22,8 +24,11 @@ export class Shard extends Card<
   ShardInterceptors,
   ShardBlueprint
 > {
+  readonly modifierManager: ModifierManager<Shard>;
+
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, {}, options);
+    this.modifierManager = new ModifierManager(this);
     this.forwardListeners();
     this.blueprint.onInit(this.game, this);
   }
@@ -50,6 +55,28 @@ export class Shard extends Card<
     this.emitter.emit(SHARD_EVENTS.AFTER_PLAY, new CardAfterPlayEvent({}));
   }
 
+  get removeModifier() {
+    return this.modifierManager.remove.bind(this.modifierManager);
+  }
+
+  get hasModifier() {
+    return this.modifierManager.has.bind(this.modifierManager);
+  }
+
+  get getModifier() {
+    return this.modifierManager.get.bind(this.modifierManager);
+  }
+
+  get modifiers() {
+    return this.modifierManager.modifiers;
+  }
+
+  addModifier(modifier: Modifier<Shard>) {
+    this.modifierManager.add(modifier);
+
+    return () => this.removeModifier(modifier.id);
+  }
+
   forwardListeners() {
     Object.values(SHARD_EVENTS).forEach(eventName => {
       this.on(eventName, event => {
@@ -67,7 +94,6 @@ export class Shard extends Card<
       name: this.name,
       imageId: this.imageId,
       description: this.description,
-      set: this.set,
       faction: this.faction?.serialize() ?? null,
       kind: this.kind,
       rarity: this.rarity

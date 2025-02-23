@@ -37,8 +37,8 @@ describe('Mulligan', () => {
   };
 
   test('game starts once both players have mulliganed', () => {
-    const { game, skipMulligan } = setup();
-    skipMulligan();
+    const { game, helpers } = setup();
+    helpers.skipMulligan();
 
     expect(game.gamePhaseSystem.phase).toBe(GAME_PHASES.BATTLE);
   });

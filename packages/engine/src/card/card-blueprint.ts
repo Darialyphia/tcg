@@ -29,11 +29,19 @@ export type CardBlueprintBase = {
 
 export type Ability<T extends AnyCard> = {
   manaCost: number;
-  followup: {
+  description: string;
+  getFollowup(
+    game: Game,
+    card: T
+  ): {
     targets: EffectTarget[];
     canCommit: (targets: SelectedTarget[]) => boolean;
   };
-  onResolve: (game: Game, card: T, targets: SelectedTarget[]) => void;
+  onResolve: <TTarget extends SelectedTarget>(
+    game: Game,
+    card: T,
+    targets: TTarget[]
+  ) => void;
 };
 
 export type CreatureBlueprint = CardBlueprintBase & {

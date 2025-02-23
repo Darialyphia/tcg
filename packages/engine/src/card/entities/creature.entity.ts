@@ -30,6 +30,8 @@ import type { SelectedTarget } from '../../game/systems/interaction.system';
 import { Hero } from './hero.entity';
 import { PLAYER_EVENTS } from '../../player/player-enums';
 import { AllCreaturesSlotsOccupiedError, NotEnoughManaError } from '../card-errors';
+import { ModifierManager } from '../components/modifier-manager.component';
+import type { Modifier } from './modifier.entity';
 
 export type SerializedCreature = SerializedCard & {
   atk: number;
@@ -55,7 +57,7 @@ const makeInterceptors = () => ({
     { amount: number; source: AnyCard; damage: Damage<AnyCard> }
   >()
 });
-type CreatureInterceptors = ReturnType<typeof makeInterceptors>;
+export type CreatureInterceptors = ReturnType<typeof makeInterceptors>;
 
 export class Creature extends Card<
   SerializedCreature,
@@ -65,6 +67,8 @@ export class Creature extends Card<
 > {
   readonly health: HealthComponent;
 
+  readonly modifierManager: ModifierManager<Creature>;
+
   private _isExhausted = false;
 
   constructor(game: Game, player: Player, options: CardOptions) {
@@ -72,9 +76,10 @@ export class Creature extends Card<
     this.health = new HealthComponent({
       initialValue: this.maxHp
     });
+    this.modifierManager = new ModifierManager(this);
     this.forwardListeners();
     this.player.on(PLAYER_EVENTS.START_TURN, () => {
-      this._isExhausted = false;
+      this.ready();
     });
     this.blueprint.onInit(this.game, this);
     this.on('ADD_INTERCEPTOR', event => {
@@ -143,6 +148,14 @@ export class Creature extends Card<
     }
   }
 
+  ready() {
+    this._isExhausted = false;
+  }
+
+  exhaust() {
+    this._isExhausted = true;
+  }
+
   destroy(source: AnyCard) {
     this.emitter.emit(CREATURE_EVENTS.BEFORE_DESTROYED, new DestroyedEvent({ source }));
     this.player.boardSide.remove(this);
@@ -163,7 +176,7 @@ export class Creature extends Card<
     });
   }
 
-  get hasEnoughMana() {
+  private get hasEnoughMana() {
     return this.manaCost <= this.player.mana;
   }
 
@@ -206,7 +219,7 @@ export class Creature extends Card<
   private resolveAbility(ability: Ability<Creature>, targets: SelectedTarget[]) {
     this.player.spendMana(ability.manaCost);
     ability.onResolve(this.game, this, targets);
-    this._isExhausted = true;
+    this.exhaust();
   }
 
   selectAbilityTargets(
@@ -217,10 +230,10 @@ export class Creature extends Card<
       this.blueprint.abilities.includes(ability),
       "The ability doesn't belong to this creature"
     );
-
+    const followup = ability.getFollowup(this.game, this);
     this.game.interaction.startSelectingTargets({
-      getNextTarget: targets => ability.followup.targets[targets.length] ?? null,
-      canCommit: ability.followup.canCommit,
+      getNextTarget: targets => followup.targets[targets.length] ?? null,
+      canCommit: followup.canCommit,
       onComplete
     });
   }
@@ -291,13 +304,13 @@ export class Creature extends Card<
 
   declareAttack(target: Defender) {
     assert(!this.isExhausted, 'Creature is exhausted');
-    this._isExhausted = true;
+    this.exhaust();
     this.game.interaction.declareAttack(this, target);
   }
 
   declareBlocker() {
     assert(!this._isExhausted, 'Creature is exhausted');
-    this._isExhausted = true;
+    this.exhaust();
     this.game.interaction.declareBlocker(this);
   }
 
@@ -361,6 +374,28 @@ export class Creature extends Card<
     this.checkHp({ source });
   }
 
+  get removeModifier() {
+    return this.modifierManager.remove.bind(this.modifierManager);
+  }
+
+  get hasModifier() {
+    return this.modifierManager.has.bind(this.modifierManager);
+  }
+
+  get getModifier() {
+    return this.modifierManager.get.bind(this.modifierManager);
+  }
+
+  get modifiers() {
+    return this.modifierManager.modifiers;
+  }
+
+  addModifier(modifier: Modifier<Creature>) {
+    this.modifierManager.add(modifier);
+
+    return () => this.removeModifier(modifier.id);
+  }
+
   forwardListeners() {
     Object.values(CREATURE_EVENTS).forEach(eventName => {
       this.on(eventName, event => {
@@ -384,8 +419,7 @@ export class Creature extends Card<
       maxHp: this.maxHp,
       job: this.job,
       rarity: this.rarity,
-      faction: this.faction?.serialize() ?? null,
-      set: this.set.serialize()
+      faction: this.faction?.serialize() ?? null
     };
   }
 }

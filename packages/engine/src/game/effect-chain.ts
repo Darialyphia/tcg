@@ -87,6 +87,10 @@ export class EffectChain
     ]);
   }
 
+  get size() {
+    return this.effectStack.length;
+  }
+
   private onAddEffect() {
     this.consecutivePasses = 0;
     this.switchTurn();
@@ -94,7 +98,10 @@ export class EffectChain
 
   private onPass() {
     this.consecutivePasses++;
-    if (this.consecutivePasses >= 2) {
+    if (
+      this.consecutivePasses >= 2 ||
+      (this.effectStack.length <= 1 && this.consecutivePasses >= 1)
+    ) {
       this.dispatch(EFFECT_CHAIN_STATE_EVENTS.RESOLVE);
     } else {
       this.switchTurn();
@@ -118,36 +125,57 @@ export class EffectChain
   }
 
   cancel(player: Player) {
-    assert(this.can(EFFECT_CHAIN_STATE_EVENTS.SKIP), 'Effect chain is already started.');
-    assert(player.equals(this.currentPlayer), "Not this player's turn.");
+    assert(this.can(EFFECT_CHAIN_STATE_EVENTS.SKIP), new ChainAlreadyStartedError());
+    assert(player.equals(this.currentPlayer), new IllegalPlayerResponseError());
 
     this.dispatch(EFFECT_CHAIN_STATE_EVENTS.SKIP);
   }
 
   start(initialEffect: Effect, player: Player): void {
-    assert(this.can(EFFECT_CHAIN_STATE_EVENTS.START), 'Effect chain is alrady started.');
-    assert(player.equals(this.currentPlayer), "Not this player's turn.");
+    assert(this.can(EFFECT_CHAIN_STATE_EVENTS.START), new ChainAlreadyStartedError());
+    assert(player.equals(this.currentPlayer), new IllegalPlayerResponseError());
 
     this.effectStack = [initialEffect];
     this.dispatch(EFFECT_CHAIN_STATE_EVENTS.START);
   }
 
   addEffect(effect: Effect, player: Player): void {
-    assert(this.can(EFFECT_CHAIN_STATE_EVENTS.ADD_EFFECT), 'Effect chain is not active.');
-    assert(player.equals(this.currentPlayer), "Not this player's turn.");
+    assert(
+      this.can(EFFECT_CHAIN_STATE_EVENTS.ADD_EFFECT),
+      new InactiveEffectChainError()
+    );
+    assert(player.equals(this.currentPlayer), new IllegalPlayerResponseError());
 
     this.effectStack.push(effect);
     this.dispatch(EFFECT_CHAIN_STATE_EVENTS.ADD_EFFECT);
   }
 
   pass(player: Player): void {
-    assert(this.can(EFFECT_CHAIN_STATE_EVENTS.PASS), 'Effect chain is not active.');
-    assert(player.equals(this.currentPlayer), "Not this player's turn.");
+    assert(this.can(EFFECT_CHAIN_STATE_EVENTS.PASS), new InactiveEffectChainError());
+    assert(player.equals(this.currentPlayer), new IllegalPlayerResponseError());
 
     this.dispatch(EFFECT_CHAIN_STATE_EVENTS.PASS);
   }
 
   serialize() {
     return this.effectStack.map(effect => effect.source.serialize());
+  }
+}
+
+export class IllegalPlayerResponseError extends Error {
+  constructor() {
+    super('Illegal player response');
+  }
+}
+
+export class ChainAlreadyStartedError extends Error {
+  constructor() {
+    super('Effect chain is already started');
+  }
+}
+
+export class InactiveEffectChainError extends Error {
+  constructor() {
+    super('No effect chain is currently active');
   }
 }

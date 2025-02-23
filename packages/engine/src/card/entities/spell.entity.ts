@@ -13,8 +13,10 @@ import {
 } from '../../game/systems/interaction.system';
 import { assert } from '@game/shared';
 import { LoyaltyDamage } from '../../combat/damage';
-import { NotEnoughManaError } from '../card-errors';
+import { IllegalSpellTypePlayedError, NotEnoughManaError } from '../card-errors';
 import { match } from 'ts-pattern';
+import { ModifierManager } from '../components/modifier-manager.component';
+import type { Modifier } from './modifier.entity';
 
 export type SerializedSpell = SerializedCard & {
   spellKind: SpellKind;
@@ -33,8 +35,11 @@ export class Spell extends Card<
   SpellInterceptors,
   SpellBlueprint
 > {
+  readonly modifierManager: ModifierManager<Spell>;
+
   constructor(game: Game, player: Player, options: CardOptions) {
     super(game, player, makeInterceptors(), options);
+    this.modifierManager = new ModifierManager(this);
     this.forwardListeners();
     this.blueprint.onInit(this.game, this);
   }
@@ -139,10 +144,7 @@ export class Spell extends Card<
 
   addToChain(targets: SelectedTarget[] = []) {
     assert(this.game.effectChainSystem.currentChain, 'No ongoing effect chain');
-    assert(
-      this.spellKind === SPELL_KINDS.BURST,
-      'Only Burst spells can be added to the chain'
-    );
+    assert(this.spellKind === SPELL_KINDS.BURST, new IllegalSpellTypePlayedError());
     const chain = this.game.effectChainSystem.currentChain;
     chain.addEffect(
       {
@@ -172,6 +174,28 @@ export class Spell extends Card<
     this.emitter.emit(SPELL_EVENTS.AFTER_DESTROYED, new DestroyedEvent({ source }));
   }
 
+  get removeModifier() {
+    return this.modifierManager.remove.bind(this.modifierManager);
+  }
+
+  get hasModifier() {
+    return this.modifierManager.has.bind(this.modifierManager);
+  }
+
+  get getModifier() {
+    return this.modifierManager.get.bind(this.modifierManager);
+  }
+
+  get modifiers() {
+    return this.modifierManager.modifiers;
+  }
+
+  addModifier(modifier: Modifier<Spell>) {
+    this.modifierManager.add(modifier);
+
+    return () => this.removeModifier(modifier.id);
+  }
+
   forwardListeners() {
     Object.values(SPELL_EVENTS).forEach(eventName => {
       this.on(eventName, event => {
@@ -189,7 +213,6 @@ export class Spell extends Card<
       name: this.name,
       imageId: this.imageId,
       description: this.description,
-      set: this.set,
       faction: this.faction?.serialize() ?? null,
       kind: this.kind,
       rarity: this.rarity,
