@@ -17,7 +17,7 @@ export const f1Quartermaster: CreatureBlueprint = {
   name: 'Quartermaster',
   description: '@Summon@: Increase the attack of a allied creature by 1.',
   faction: FACTIONS.F1,
-  imageId: 'fire-shard',
+  imageId: 'quartermaster',
   loyalty: 0,
   rarity: RARITIES.COMMON,
   setId: CARD_SETS.CORE,
@@ -26,7 +26,7 @@ export const f1Quartermaster: CreatureBlueprint = {
   atk: 2,
   maxHp: 2,
   job: CREATURE_JOB.STRIKER,
-  keywords: [KEYWORDS.ATTACKER],
+  keywords: [KEYWORDS.SUMMON],
   onInit: () => {},
   onPlay(game, card) {
     card.addModifier(

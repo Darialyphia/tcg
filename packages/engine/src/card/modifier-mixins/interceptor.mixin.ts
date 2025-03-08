@@ -4,14 +4,13 @@ import type {
   inferInterceptorValue
 } from '../../utils/interceptable';
 import type { Creature, CreatureInterceptors } from '../entities/creature.entity';
-import { Evolution } from '../entities/evolution.entity';
 import type { Modifier } from '../entities/modifier.entity';
 import { ModifierMixin } from './modifier-mixin';
 
 export class CreatureInterceptorModifierMixin<
   TKey extends keyof CreatureInterceptors
-> extends ModifierMixin<Creature | Evolution> {
-  private modifier!: Modifier<Creature | Evolution>;
+> extends ModifierMixin<Creature> {
+  private modifier!: Modifier<Creature>;
 
   constructor(
     game: Game,
@@ -20,7 +19,7 @@ export class CreatureInterceptorModifierMixin<
       interceptor: (
         value: inferInterceptorValue<CreatureInterceptors[TKey]>,
         ctx: inferInterceptorCtx<CreatureInterceptors[TKey]>,
-        modifier: Modifier<Creature | Evolution>
+        modifier: Modifier<Creature>
       ) => inferInterceptorValue<CreatureInterceptors[TKey]>;
     }
   ) {
@@ -35,12 +34,12 @@ export class CreatureInterceptorModifierMixin<
     return this.options.interceptor(value, ctx, this.modifier);
   }
 
-  onApplied(card: Creature | Evolution, modifier: Modifier<Creature | Evolution>): void {
+  onApplied(card: Creature, modifier: Modifier<Creature>): void {
     this.modifier = modifier;
     card.addInterceptor(this.options.key, this.interceptor as any);
   }
 
-  onRemoved(card: Creature | Evolution): void {
+  onRemoved(card: Creature): void {
     card.removeInterceptor(this.options.key, this.interceptor as any);
   }
 

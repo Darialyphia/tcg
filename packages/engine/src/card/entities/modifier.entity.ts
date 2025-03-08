@@ -5,7 +5,6 @@ import type { ModifierMixin } from '../modifier-mixins/modifier-mixin';
 import type { AnyCard } from './card.entity';
 import type { Shard } from './shard.entity';
 import type { Creature } from './creature.entity';
-import type { Evolution } from './evolution.entity';
 import type { Hero } from './hero.entity';
 import type { Spell } from './spell.entity';
 
@@ -26,7 +25,7 @@ export type ModifierOptions = ModifierInfos & {
       }
   );
 
-export type ModifierTarget = Creature | Evolution | Hero | Spell | Shard;
+export type ModifierTarget = Creature | Hero | Spell | Shard;
 
 export class Modifier<TCard extends ModifierTarget> extends Entity<
   EmptyObject,

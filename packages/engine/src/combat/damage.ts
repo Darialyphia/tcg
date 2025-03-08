@@ -2,7 +2,6 @@ import type { BetterOmit, Values } from '@game/shared';
 import type { AnyCard } from '../card/entities/card.entity';
 import type { Creature } from '../card/entities/creature.entity';
 import type { Hero } from '../card/entities/hero.entity';
-import type { Evolution } from '../card/entities/evolution.entity';
 import type { Spell } from '../card/entities/spell.entity';
 
 export const DAMAGE_TYPES = {
@@ -14,9 +13,9 @@ export const DAMAGE_TYPES = {
 
 export type DamageType = Values<typeof DAMAGE_TYPES>;
 
-export type Attacker = Creature | Evolution;
-export type Defender = Creature | Evolution | Hero;
-export type Blocker = Creature | Evolution;
+export type Attacker = Creature;
+export type Defender = Creature | Hero;
+export type Blocker = Creature;
 
 export type DamageOptions<T extends AnyCard> = {
   source: T;

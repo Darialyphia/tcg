@@ -9,42 +9,35 @@ import { mapKeys, mapValues } from 'lodash-es';
 import { PLAYER_EVENTS } from '../player/player-enums';
 import type {
   CreatureEventMap,
-  EvolutionEventMap,
   HeroEventMap,
   ShardEventMap,
   SpellEventMap
 } from '../card/card.events';
 import type { AnyCard } from '../card/entities/card.entity';
 import type { Creature, SerializedCreature } from '../card/entities/creature.entity';
-import type { Evolution, SerializedEvolution } from '../card/entities/evolution.entity';
 import type { Hero, SerializedHero } from '../card/entities/hero.entity';
 import type { SerializedSpell, Spell } from '../card/entities/spell.entity';
 import type { SerializedShard, Shard } from '../card/entities/shard.entity';
-import type { E } from 'vitest/dist/chunks/environment.LoooBwUu';
 
 type GameCardEventMap<TCard extends AnyCard> = TCard extends Creature
   ? CreatureEventMap
-  : TCard extends Evolution
-    ? EvolutionEventMap
-    : TCard extends Hero
-      ? HeroEventMap
-      : TCard extends Spell
-        ? SpellEventMap
-        : TCard extends Shard
-          ? ShardEventMap
-          : `TCard needs to be an instance of Creature, Evolution, Hero, Spell, or Shard`;
+  : TCard extends Hero
+    ? HeroEventMap
+    : TCard extends Spell
+      ? SpellEventMap
+      : TCard extends Shard
+        ? ShardEventMap
+        : `TCard needs to be an instance of Creature, Hero, Spell, or Shard`;
 
 type GameCardEventSerialized<TCard extends AnyCard> = TCard extends Creature
   ? SerializedCreature
-  : TCard extends Evolution
-    ? SerializedEvolution
-    : TCard extends Hero
-      ? SerializedHero
-      : TCard extends Spell
-        ? SerializedSpell
-        : TCard extends Shard
-          ? SerializedShard
-          : `TCard needs to be an instance of Creature, Evolution, Hero, Spell, or Shard`;
+  : TCard extends Hero
+    ? SerializedHero
+    : TCard extends Spell
+      ? SerializedSpell
+      : TCard extends Shard
+        ? SerializedShard
+        : `TCard needs to be an instance of Creature, Hero, Spell, or Shard`;
 
 type GameCardSerializedResult<
   TCard extends AnyCard,
@@ -163,14 +156,6 @@ type GameCreatureEventMap = {
   >;
 };
 
-type GameEvolutionEventMap = {
-  [Event in keyof EvolutionEventMap as `card.${Event}`]: GameCardEvent<
-    Evolution,
-    EvolutionEventMap,
-    EvolutionEventMap[Event]
-  >;
-};
-
 type GameHeroEventMap = {
   [Event in keyof HeroEventMap as `card.${Event}`]: GameCardEvent<
     Hero,
@@ -195,7 +180,6 @@ export type GameEventMap = Prettify<
     TurnEventMap &
     GamePlayerEventMap &
     GameCreatureEventMap &
-    GameEvolutionEventMap &
     GameHeroEventMap &
     GameSpellEventMap &
     GameShardEventMap

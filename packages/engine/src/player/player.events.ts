@@ -4,10 +4,7 @@ import type { PLAYER_EVENTS } from './player-enums';
 import type { SerializedSpell, Spell } from '../card/entities/spell.entity';
 import type { Creature, SerializedCreature } from '../card/entities/creature.entity';
 import type { SerializedShard, Shard } from '../card/entities/shard.entity';
-import type { Evolution, SerializedEvolution } from '../card/entities/evolution.entity';
-import type { SerializedCard } from '../card/entities/card.entity';
 import type { DeckCard } from '../card/entities/deck.entity';
-import { replace } from 'lodash-es';
 
 export class PlayerStartTurnEvent extends TypedEvent<EmptyObject, EmptyObject> {
   serialize() {
@@ -33,7 +30,7 @@ export class PlayerManaChangeEvent extends TypedEvent<
 }
 
 export class PlayCardEvent extends TypedEvent<
-  { card: Creature | Evolution | Spell | Shard },
+  { card: Creature | Spell | Shard },
   { card: SerializedCreature | SerializedSpell | SerializedShard }
 > {
   serialize() {

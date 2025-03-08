@@ -19,7 +19,6 @@ export type GamePlayer = Prettify<
     deck: {
       hero: { blueprintId: string };
       cards: Array<{ blueprintId: string }>;
-      evolutions: Array<{ blueprintId: string }>;
     };
   }
 >;
@@ -94,9 +93,6 @@ export class Game {
           hero: this.makeCard(player.deck.hero.blueprintId, player.id),
           cards: player.deck.cards.map(card => {
             return this.makeCard(card.blueprintId, player.id);
-          }),
-          evolutions: player.deck.evolutions.map(evo => {
-            return this.makeCard(evo.blueprintId, player.id);
           })
         }
       }))

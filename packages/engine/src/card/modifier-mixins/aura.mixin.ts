@@ -2,7 +2,6 @@ import { Game } from '../../game/game';
 import { CREATURE_EVENTS } from '../card.enums';
 import type { AnyCard } from '../entities/card.entity';
 import type { Creature } from '../entities/creature.entity';
-import type { Evolution } from '../entities/evolution.entity';
 import { Modifier } from '../entities/modifier.entity';
 import { ModifierMixin } from './modifier-mixin';
 
@@ -12,8 +11,8 @@ export type AuraOptions = {
   onLoseAura(unit: AnyCard): void;
 };
 
-export abstract class AuraModifierMixin extends ModifierMixin<Creature | Evolution> {
-  protected modifier!: Modifier<Creature | Evolution>;
+export abstract class AuraModifierMixin extends ModifierMixin<Creature> {
+  protected modifier!: Modifier<Creature>;
 
   private affectedCardsIds = new Set<string>();
 
@@ -73,7 +72,7 @@ export abstract class AuraModifierMixin extends ModifierMixin<Creature | Evoluti
     });
   }
 
-  onApplied(card: Creature | Evolution, modifier: Modifier<Creature | Evolution>): void {
+  onApplied(card: Creature, modifier: Modifier<Creature>): void {
     this.modifier = modifier;
     this.isApplied = true;
 

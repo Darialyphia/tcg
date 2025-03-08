@@ -17,10 +17,7 @@ export type GameStateSnapshot = {
   events: SerializedStarEvent[];
 };
 
-type SerializedHiddenBoardSide = Override<
-  SerializedBoardSide,
-  { evolution: number; hand: number }
->;
+type SerializedHiddenBoardSide = Override<SerializedBoardSide, { hand: number }>;
 
 export type SerializedOmniscientState = {
   board: SerializedBoard;
@@ -119,7 +116,6 @@ export class GameSnaphotSystem extends System<EmptyObject> {
 
             return {
               ...side,
-              evolution: side.evolution.length,
               hand: side.hand.length
             };
           })

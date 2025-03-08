@@ -74,12 +74,10 @@ describe('Spell', () => {
       .withCardPool(cardPool)
       .withP1Deck({
         hero: { blueprintId: 'test-hero' },
-        evolutions: [],
         cards: Array.from({ length: 30 }, () => ({ blueprintId: 'test-spell-cast' }))
       })
       .withP2Deck({
         hero: { blueprintId: 'test-hero' },
-        evolutions: [],
         cards: Array.from({ length: 30 }, () => ({ blueprintId: 'test-spell-cast' }))
       })
       .build();

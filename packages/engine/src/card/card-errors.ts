@@ -28,12 +28,6 @@ export class PlayedSpellWithoutChainDuringOpponentTurnError extends Error {
   }
 }
 
-export class UnavailableEvolutionTributeRequirementsError extends Error {
-  constructor() {
-    super('You cannot meet the requirements needed to summon this evolution');
-  }
-}
-
 export class IllegalSpellTypePlayedError extends Error {
   constructor() {
     super('Non-burst spells cannot used in an effect chain');

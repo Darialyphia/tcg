@@ -12,8 +12,13 @@ export const KEYWORDS = {
   SUMMON: {
     id: 'SUMMON',
     name: 'Summon',
-    description:
-      'Triggers an effect when this card is played from the hand or evolution zone.',
+    description: 'Triggers an effect when this card is played from the hand.',
+    aliases: []
+  },
+  LAST_BREATH: {
+    id: 'LAST_BREATH',
+    name: 'Last Breath',
+    description: 'Triggers an effect when this card is destroyed.',
     aliases: []
   },
   DRIFTER: {

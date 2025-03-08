@@ -27,12 +27,10 @@ describe('Creature', () => {
       .withCardPool(cardPool)
       .withP1Deck({
         hero: { blueprintId: 'test-hero' },
-        evolutions: [],
         cards: Array.from({ length: 30 }, () => ({ blueprintId: 'test-creature' }))
       })
       .withP2Deck({
         hero: { blueprintId: 'test-hero' },
-        evolutions: [],
         cards: Array.from({ length: 30 }, () => ({ blueprintId: 'test-creature' }))
       })
       .build();

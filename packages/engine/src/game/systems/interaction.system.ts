@@ -16,7 +16,6 @@ import type { Effect } from '../effect-chain';
 import type { Attacker, Blocker, Defender } from '../../combat/damage';
 import { match } from 'ts-pattern';
 import type { SerializedCreature } from '../../card/entities/creature.entity';
-import type { SerializedEvolution } from '../../card/entities/evolution.entity';
 import type { SerializedHero } from '../../card/entities/hero.entity';
 
 export const INTERACTION_STATES = {
@@ -190,9 +189,9 @@ export type SerialiedInteractionStateContext =
   | {
       state: typeof INTERACTION_STATES.RESPOND_TO_ATTACK;
       ctx: {
-        attacker: SerializedCreature | SerializedEvolution;
-        target: SerializedCreature | SerializedEvolution | SerializedHero;
-        blocker: SerializedCreature | SerializedEvolution | null;
+        attacker: SerializedCreature;
+        target: SerializedCreature | SerializedHero;
+        blocker: SerializedCreature | null;
       };
     };
 

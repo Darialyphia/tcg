@@ -8,7 +8,6 @@ import type {
 import { createCard } from '../card.factory';
 import type { CardOptions } from '../entities/card.entity';
 import { Deck, type DeckCard } from '../entities/deck.entity';
-import type { Evolution } from '../entities/evolution.entity';
 
 export type CardManagerComponentOptions = {
   deck: CardOptions<CreatureBlueprint | SpellBlueprint | ShardBlueprint>[];
@@ -23,7 +22,7 @@ export class CardManagerComponent {
 
   readonly hand: DeckCard[] = [];
 
-  readonly discardPile = new Set<DeckCard | Evolution>();
+  readonly discardPile = new Set<DeckCard>();
 
   constructor(
     game: Game,
@@ -85,7 +84,7 @@ export class CardManagerComponent {
     card.play();
   }
 
-  sendToDiscardPile(card: DeckCard | Evolution) {
+  sendToDiscardPile(card: DeckCard) {
     this.discardPile.add(card);
   }
 

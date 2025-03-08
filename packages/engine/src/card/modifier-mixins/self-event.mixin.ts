@@ -1,23 +1,19 @@
 import { Game } from '../../game/game';
 import type { CreatureEventMap } from '../card.events';
 import type { Creature } from '../entities/creature.entity';
-import type { Evolution } from '../entities/evolution.entity';
 import { Modifier } from '../entities/modifier.entity';
 import { ModifierMixin } from './modifier-mixin';
 
 export class SelfEventModifierMixin<
   TEvent extends keyof CreatureEventMap
-> extends ModifierMixin<Creature | Evolution> {
-  private modifier!: Modifier<Creature | Evolution>;
+> extends ModifierMixin<Creature> {
+  private modifier!: Modifier<Creature>;
 
   constructor(
     game: Game,
     private options: {
       eventName: TEvent;
-      handler: (
-        event: CreatureEventMap[TEvent],
-        modiier: Modifier<Creature | Evolution>
-      ) => void;
+      handler: (event: CreatureEventMap[TEvent], modiier: Modifier<Creature>) => void;
       once?: boolean;
     }
   ) {
@@ -29,7 +25,7 @@ export class SelfEventModifierMixin<
     this.options.handler(event, this.modifier);
   }
 
-  onApplied(card: Creature | Evolution, modifier: Modifier<Creature | Evolution>): void {
+  onApplied(card: Creature, modifier: Modifier<Creature>): void {
     this.modifier = modifier;
     if (this.options.once) {
       card.once(this.options.eventName, this.handler as any);
@@ -38,7 +34,7 @@ export class SelfEventModifierMixin<
     }
   }
 
-  onRemoved(card: Creature | Evolution): void {
+  onRemoved(card: Creature): void {
     card.off(this.options.eventName, this.handler as any);
   }
 

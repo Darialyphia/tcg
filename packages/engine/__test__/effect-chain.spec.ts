@@ -20,14 +20,17 @@ describe('Effect Chain', () => {
         abilities: [
           {
             manaCost: 0,
-            followup: {
-              targets: [
-                {
-                  type: 'card',
-                  isElligible: () => true
-                }
-              ],
-              canCommit: () => true
+            description: 'Test ability',
+            getFollowup() {
+              return {
+                targets: [
+                  {
+                    type: 'card',
+                    isElligible: () => true
+                  }
+                ],
+                canCommit: () => true
+              };
             },
             onResolve: vi.fn()
           }
@@ -53,12 +56,10 @@ describe('Effect Chain', () => {
       .withCardPool(cardPool)
       .withP1Deck({
         hero: { blueprintId: 'test-hero' },
-        evolutions: [],
         cards: Array.from({ length: 30 }, () => ({ blueprintId: 'test-spell-cast' }))
       })
       .withP2Deck({
         hero: { blueprintId: 'test-hero' },
-        evolutions: [],
         cards: Array.from({ length: 30 }, () => ({ blueprintId: 'test-spell-cast' }))
       })
       .build();

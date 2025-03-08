@@ -1,4 +1,4 @@
-import type { CreatureBlueprint, ShardBlueprint } from '../../../card-blueprint';
+import type { CreatureBlueprint } from '../../../card-blueprint';
 import { KEYWORDS } from '../../../card-keyword';
 import {
   CARD_KINDS,

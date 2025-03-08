@@ -2,10 +2,7 @@ import { assert, isDefined, type Nullable, type Serializable } from '@game/share
 import { SPELL_KINDS, type SpellKind } from '../../card/card.enums';
 import type { AnyCard, SerializedCard } from '../../card/entities/card.entity';
 import { Creature, type SerializedCreature } from '../../card/entities/creature.entity';
-import {
-  Evolution,
-  type SerializedEvolution
-} from '../../card/entities/evolution.entity';
+
 import type { Hero, SerializedHero } from '../../card/entities/hero.entity';
 import type { SerializedShard, Shard } from '../../card/entities/shard.entity';
 import { Spell, type SerializedSpell } from '../../card/entities/spell.entity';
@@ -18,11 +15,11 @@ export type CreatureSlot = 0 | 1 | 2 | 3 | 4;
 
 type CreatureZone = {
   slots: [
-    Nullable<Creature | Evolution>,
-    Nullable<Creature | Evolution>,
-    Nullable<Creature | Evolution>,
-    Nullable<Creature | Evolution>,
-    Nullable<Creature | Evolution>
+    Nullable<Creature>,
+    Nullable<Creature>,
+    Nullable<Creature>,
+    Nullable<Creature>,
+    Nullable<Creature>
   ];
   enchants: Spell[];
 };
@@ -37,11 +34,11 @@ type ColumnEnchants = [
 
 type SerializedCreatureZone = {
   slots: [
-    SerializedCreature | SerializedEvolution | null,
-    SerializedCreature | SerializedEvolution | null,
-    SerializedCreature | SerializedEvolution | null,
-    SerializedCreature | SerializedEvolution | null,
-    SerializedCreature | SerializedEvolution | null
+    SerializedCreature | null,
+    SerializedCreature | null,
+    SerializedCreature | null,
+    SerializedCreature | null,
+    SerializedCreature | null
   ];
   enchants: SerializedSpell[];
 };
@@ -56,7 +53,6 @@ export type SerializedBoardSide = {
   defenseZone: SerializedCreatureZone;
   manaZone: SerializedCard[];
   shardZone: SerializedShard | null;
-  evolution: Array<SerializedEvolution>;
   hand: Array<SerializedCreature | SerializedSpell | SerializedShard>;
   deck: { total: number; remaining: number };
 };
@@ -115,7 +111,7 @@ class BoardSide implements Serializable<SerializedBoardSide> {
     this.shardZone = null;
   }
 
-  getPositionFor(card: Creature | Evolution) {
+  getPositionFor(card: Creature) {
     const attackZoneIndex = this.attackZone.slots.findIndex(creature =>
       creature?.equals(card)
     );
@@ -133,7 +129,7 @@ class BoardSide implements Serializable<SerializedBoardSide> {
     return null;
   }
 
-  getZoneFor(card: Creature | Evolution) {
+  getZoneFor(card: Creature) {
     const isInAttack = this.attackZone.slots.some(creature => creature?.equals(card));
     if (isInAttack) {
       return 'attack' as const;
@@ -147,10 +143,7 @@ class BoardSide implements Serializable<SerializedBoardSide> {
     return null;
   }
 
-  getCreatureAt(
-    zone: 'attack' | 'defense',
-    slot: CreatureSlot
-  ): Nullable<Creature | Evolution> {
+  getCreatureAt(zone: 'attack' | 'defense', slot: CreatureSlot): Nullable<Creature> {
     return this.getZone(zone).slots[slot];
   }
 
@@ -164,11 +157,7 @@ class BoardSide implements Serializable<SerializedBoardSide> {
     ];
   }
 
-  summonCreature(
-    card: Creature | Evolution,
-    zone: 'attack' | 'defense',
-    slot: CreatureSlot
-  ) {
+  summonCreature(card: Creature, zone: 'attack' | 'defense', slot: CreatureSlot) {
     assert(!this.isOccupied(zone, slot), new CreatureSlotAlreadyOccupiedError());
 
     this.getZone(zone).slots[slot] = card;
@@ -184,18 +173,15 @@ class BoardSide implements Serializable<SerializedBoardSide> {
     );
   }
 
-  getCreatures(zone: 'attack' | 'defense'): (Creature | Evolution)[] {
+  getCreatures(zone: 'attack' | 'defense'): Creature[] {
     return this.getZone(zone).slots.filter(isDefined);
   }
 
-  getAllCreatures(): (Creature | Evolution)[] {
+  getAllCreatures(): Creature[] {
     return [...this.attackZone.slots, ...this.defenseZone.slots].filter(isDefined);
   }
 
-  getAdjacentCreatures(
-    zone: 'attack' | 'defense',
-    slot: CreatureSlot
-  ): Array<Creature | Evolution> {
+  getAdjacentCreatures(zone: 'attack' | 'defense', slot: CreatureSlot): Array<Creature> {
     if (zone === 'attack') {
       return [
         this.player.boardSide.getCreatureAt('attack', (slot - 1) as CreatureSlot),
@@ -249,8 +235,8 @@ class BoardSide implements Serializable<SerializedBoardSide> {
     this.manaZone.push(card);
   }
 
-  remove(card: Creature | Evolution | Spell) {
-    if (card instanceof Creature || card instanceof Evolution) {
+  remove(card: Creature | Spell) {
+    if (card instanceof Creature) {
       const zone = card.position!.zone;
       this.getZone(zone).slots[card.position!.slot] = null;
     } else if (card instanceof Spell) {
@@ -293,7 +279,6 @@ class BoardSide implements Serializable<SerializedBoardSide> {
       },
       manaZone: this.manaZone.map(card => card.serialize()),
       shardZone: this.shardZone ? this.shardZone.serialize() : null,
-      evolution: this.player.evolutions.map(evolution => evolution.serialize()),
       hand: this.player.hand.map(card => card.serialize()),
       deck: {
         total: this.player.deckSize,

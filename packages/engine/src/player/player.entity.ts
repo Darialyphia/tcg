@@ -19,14 +19,12 @@ import type { Hero } from '../card/entities/hero.entity';
 import type {
   CardBlueprint,
   CreatureBlueprint,
-  EvolutionBlueprint,
   HeroBlueprint,
   ShardBlueprint,
   SpellBlueprint
 } from '../card/card-blueprint';
 import { CardManagerComponent } from '../card/components/card-manager.component';
 import type { DeckCard } from '../card/entities/deck.entity';
-import type { Evolution } from '../card/entities/evolution.entity';
 import { CARD_EVENTS, CARD_KINDS } from '../card/card.enums';
 import type { SerializedSpell } from '../card/entities/spell.entity';
 import type { SerializedShard } from '../card/entities/shard.entity';
@@ -38,7 +36,6 @@ export type PlayerOptions = {
   deck: {
     hero: CardOptions<HeroBlueprint>;
     cards: Array<CardOptions<CreatureBlueprint | SpellBlueprint | ShardBlueprint>>;
-    evolutions: Array<CardOptions<EvolutionBlueprint>>;
   };
 };
 
@@ -57,8 +54,6 @@ export class Player
   private readonly cards: CardManagerComponent;
 
   readonly hero: Hero;
-
-  readonly evolutions: Evolution[];
 
   private mulliganIndices: number[] = [];
 
@@ -83,9 +78,6 @@ export class Player
       shouldShuffleDeck: this.game.config.SHUFFLE_DECK_AT_START_OF_GAME
     });
     this.draw(this.game.config.INITIAL_HAND_SIZE);
-    this.evolutions = options.deck.evolutions.map(evolutionOptions =>
-      createCard(game, this, evolutionOptions)
-    );
     this.forwardListeners();
   }
 
@@ -272,29 +264,8 @@ export class Player
     this.emitter.emit(PLAYER_EVENTS.AFTER_PLAY_CARD, new PlayCardEvent({ card }));
   }
 
-  sendToDiscardPile(card: DeckCard | Evolution) {
+  sendToDiscardPile(card: DeckCard) {
     this.cards.sendToDiscardPile(card);
-  }
-
-  playEvolutionAt(index: number) {
-    const evolution = this.evolutions[index];
-    if (!evolution) return;
-
-    this.playEvolution(evolution);
-  }
-
-  playEvolution(evolution: Evolution) {
-    this.emitter.emit(
-      PLAYER_EVENTS.BEFORE_PLAY_CARD,
-      new PlayCardEvent({ card: evolution })
-    );
-
-    evolution.play();
-
-    this.emitter.emit(
-      PLAYER_EVENTS.AFTER_PLAY_CARD,
-      new PlayCardEvent({ card: evolution })
-    );
   }
 
   replaceCardAtIndex(index: number) {

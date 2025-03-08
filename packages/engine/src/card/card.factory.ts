@@ -5,13 +5,11 @@ import type { AnyCard, CardOptions } from './entities/card.entity';
 import { CARD_KINDS } from './card.enums';
 import { Creature } from './entities/creature.entity';
 import { Spell } from './entities/spell.entity';
-import { Evolution } from './entities/evolution.entity';
 import { Shard } from './entities/shard.entity';
 import { Hero } from './entities/hero.entity';
 import type {
   CardBlueprint,
   CreatureBlueprint,
-  EvolutionBlueprint,
   HeroBlueprint,
   ShardBlueprint,
   SpellBlueprint
@@ -25,18 +23,15 @@ export const createCard = <T extends CardBlueprint = CardBlueprint>(
   ? Creature
   : T extends HeroBlueprint
     ? Hero
-    : T extends EvolutionBlueprint
-      ? Evolution
-      : T extends SpellBlueprint
-        ? Spell
-        : T extends ShardBlueprint
-          ? Shard
-          : AnyCard => {
+    : T extends SpellBlueprint
+      ? Spell
+      : T extends ShardBlueprint
+        ? Shard
+        : AnyCard => {
   const card = match(options.blueprint.kind)
     .with(CARD_KINDS.CREATURE, () => new Creature(game, player, options))
     .with(CARD_KINDS.SPELL, () => new Spell(game, player, options))
     .with(CARD_KINDS.SHARD, () => new Shard(game, player, options))
-    .with(CARD_KINDS.EVOLUTION, () => new Evolution(game, player, options))
     .with(CARD_KINDS.HERO, () => new Hero(game, player, options))
     .exhaustive();
 

@@ -23,7 +23,7 @@ To balance first player advantage, the player who plays second gets to draw an a
 
 During their turn, the player can
 
-- play shard, creature, spell or evolution cards
+- play shard, creature, or spell cards
 
 - attack with their creatures
 
@@ -50,7 +50,6 @@ A player's side of the board is comprised of the following parts;
 - Shard zone: this is where Shards cards are played
 - Mana zone: this is where cards used are mana, and shards converted to mana are placed.
 - Trap zone: this is where Trap cards are played
-- Evolution zone: this is where Evolution cards are placed at the start of the game.
 - Attack zone: contains five slots where player can play Creature cards, as well as one slot to play one or multiple Sêmm cards of the Row Enchant type
 - Defense zone: contains five slots where player can play Creature cards, as well as one slot to play one or multiple Sêmm cards of the Row Enchant type
 
@@ -87,7 +86,7 @@ Units have the following attributes:
 
 - Health Points (HP): the amount of damage a unit can take before being destroyed
 
-- Job: used for certain effects (for example: increase the attack of all Mages) or Symmoning Evolution Cards
+- Job: used for certain effects (for example: increase the attack of all Mages)
 
 Creatures are either played in the Attack zone of Defense zone. Once summoned, they cannot change zone by themselves except via other card effects. They also cannot move inside their zone (move from one slot to another). The initial positioning of unit is thus a very important decision, as it could matter in some AOE effects.
 
@@ -121,17 +120,6 @@ There are different typed of spell cards:
 - Creature Enchant: a Creature Enchant spell is played on a creature and only affects this creature.
 - Hero Enchant: a Hero Enchant spell is played in the Hero Enchant zone and is an ongoing spell that can affect anything, or grant the hero buffs or debuffs.
 - Trap: Trap cards are played in the trap zone, and are trigger when specific actions occur. Note that a player cannot respond to a trap being triggered. Also, if it is triggered as a result of an effect occuring during a chain of effects or burst spell resolving, the trap will acviatr after the whole chain has been resolved.
-
-### Evolution Cards
-
-Evolution Cards are a special type that are not put into your deck but directly in your Evolution zone. The opponent cannot see the content of your Evolution Zone. This is a surprise factor in the same way they cannot see your deck. They can, however, know how many evolutions cards are still remaining in the evolution zone.
-
-To summon a card from your Evolution zone, you must tribute at least a Creature card on the field whith the same job as the evolution you want to summon, and one or more creatures from your board or hand. The total mana cost of all tributed creatures must equal the level of the evolution card.
-
-Note that playing an evolution card doesn't cost mana, so this enables big swing turn with potentially multiple creatures entering the field.
-
-Unlike creature Cards, Evolution cards are not exhausted when they are summoned. They are, however, unable to attack the enemy hero the turn they're summoned. This is to prevent high bursts of damage to the enemy hero that would be hard to react to.
-You can summon an evolution card only once per turn.
 
 ## Hero
 

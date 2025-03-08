@@ -11,7 +11,6 @@ import type {
 } from './card.enums';
 import type { AnyCard } from './entities/card.entity';
 import type { Creature } from './entities/creature.entity';
-import type { Evolution } from './entities/evolution.entity';
 import type { Faction } from './entities/faction.entity';
 import type { Hero } from './entities/hero.entity';
 import type { Shard } from './entities/shard.entity';
@@ -77,19 +76,6 @@ export type ShardBlueprint = CardBlueprintBase & {
   onPlay(game: Game, card: Shard): void;
 };
 
-export type EvolutionBlueprint = CardBlueprintBase & {
-  kind: Extract<CardKind, typeof CARD_KINDS.EVOLUTION>;
-  job: CreatureJob;
-  manaCost: number;
-  keywords: Keyword[];
-  maxHp: number;
-  atk: number;
-  loyalty: number;
-  abilities: Array<Ability<Evolution>>;
-  onInit(game: Game, card: Evolution): void;
-  onPlay(game: Game, card: Evolution): void;
-};
-
 export type HeroBlueprint = CardBlueprintBase & {
   kind: Extract<CardKind, typeof CARD_KINDS.HERO>;
   maxHp: number;
@@ -101,5 +87,4 @@ export type CardBlueprint =
   | CreatureBlueprint
   | SpellBlueprint
   | ShardBlueprint
-  | EvolutionBlueprint
   | HeroBlueprint;
